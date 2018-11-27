@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="HydraSettings">
+    <option name="hydraStorePath" value="E:\niufu_spark_work\buryLogProject\.hydra\idea" />
+    <option name="noOfCores" value="2" />
+    <option name="projectRoot" value="E:\niufu_spark_work\buryLogProject" />
+    <option name="sourcePartitioner" value="auto" />
+  </component>
+</project>
