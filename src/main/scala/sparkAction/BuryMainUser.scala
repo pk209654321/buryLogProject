@@ -13,13 +13,13 @@ import scalaUtil.{LocalOrLine, DateScalaUtil}
   * Created by lenovo on 2018/11/16.
   * 将埋点数据清洗,形成两张表
   */
-object BuryMainFunction {
+object BuryMainUser {
   private val hdfsPath: String = ConfigurationManager.getProperty("hdfs.log")
 
   def main(args: Array[String]): Unit = {
     val diffDay: Int = args(0).toInt
     val local: Boolean = LocalOrLine.judgeLocal()
-    var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
+    var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainUser")
     if (local) {
       System.setProperty("HADOOP_USER_NAME", "wangyd")
       sparkConf = sparkConf.setMaster("local[*]")
@@ -52,20 +52,20 @@ object BuryMainFunction {
 
     val filterVisit: RDD[BuryLogin] = map.filter(_.logType == 1) //过滤出访问日志Data
     //清洗出访问日志数据
-    BuryVisitTable.cleanVisitData(filterVisit, hc, diffDay)
+    //BuryVisitTable.cleanVisitData(filterVisit, hc, diffDay)
     //=========================================================================================
-    val filterAction: RDD[BuryLogin] = map.filter(_.logType == 2) //过滤出行为日志Data
+  /*  val filterAction: RDD[BuryLogin] = map.filter(_.logType == 2) //过滤出行为日志Data
     val filterClient: RDD[BuryLogin] = filterAction.filter(line => {
       val source: Int = line.source
-      if (source == 1 || source == 2|| source==4) {
+      if (source == 1 || source == 2) {
         //过滤出客户端Data
         true
       } else {
         false
       }
-    })
+    })*/
     //清洗出客户端数据行为数据
-    BuryClientTable.cleanClientData(filterClient, hc, diffDay)
+    /*BuryClientTable.cleanClientData(filterClient, hc, diffDay)
     val filterWeb: RDD[BuryLogin] = filterAction.filter(line => {
       val source: Int = line.source
       if (source == 3) {
@@ -74,14 +74,15 @@ object BuryMainFunction {
       } else {
         false
       }
-    })
+    })*/
     //清洗出网页端行为数据
-    BuryWebTable.cleanWebData(filterWeb,hc,diffDay)
+    //BuryWebTable.cleanWebData(filterWeb,hc,diffDay)
+    //用户启动上报
+    BuryLoginReport.repotUserLogin(filterVisit)
 
     sc.stop()
   }
 }
 
-case class BuryLogin(var line: String, var sendTime: String, var source: Int, var logType: Int, var ipStr: String)
 
 

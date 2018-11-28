@@ -18,6 +18,7 @@ object BuryVisitTable {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableVisit")
   def cleanVisitData(filterVisit: RDD[BuryLogin], hc: HiveContext, diffDay:Int): Unit = {
     val map: RDD[Row] = filterVisit.map(line => {
+      val ipStr: String = line.ipStr//获取外网ip
       val all: String = line.line
       val split: Array[String] = all.split("\\|")
       val visit: StockShopVisit = new StockShopVisit()
@@ -42,7 +43,7 @@ object BuryVisitTable {
             case "screen_height" => if(StringUtils.isNotBlank(trimVal)) visit.setScreen_height(trimVal)
             case "screen_width" => if(StringUtils.isNotBlank(trimVal)) visit.setScreen_width(trimVal)
             case "mac" => if(StringUtils.isNotBlank(trimVal)) visit.setMac(trimVal)
-            case "ip" => if(StringUtils.isNotBlank(trimVal)) visit.setIp(trimVal)
+            case "ip" => if(StringUtils.isNotBlank(trimVal)) visit.setIp(ipStr)
             case "imei" => if(StringUtils.isNotBlank(trimVal)) visit.setImei(trimVal)
             case "iccid" => if(StringUtils.isNotBlank(trimVal)) visit.setIccid(trimVal)
             case "meid" => if(StringUtils.isNotBlank(trimVal)) visit.setMeid(trimVal)
