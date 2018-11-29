@@ -1,6 +1,4 @@
-package testFunction
-
-import java.sql.{Connection, DriverManager, PreparedStatement}
+package testFunction.scalaExample
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD

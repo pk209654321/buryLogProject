@@ -1,4 +1,4 @@
-package testFunction
+package testFunction.scalaExample
 
 import java.sql.{Connection, DriverManager, PreparedStatement}
 

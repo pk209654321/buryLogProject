@@ -9,7 +9,7 @@ object TestDemo {
     val sc: SparkContext = new SparkContext(conf)
     val arrayRdd: RDD[(String, Int, Int)] = sc.parallelize(Array(("王亚东",20,99),("王铮",66,55),("张跑",44,55)))
     ///implicit val p1=new TopImplitOrdring  //传递隐式参数,第一种方法
-    import OrderContext.topAction //第二种方法
+    import testFunction.scalaExample.OrderContext.topAction //第二种方法
     //第三种方法TopImplit 直接 extends Ordering/Ordered 实现compare方法
     val arraySort: RDD[(String, Int, Int)] = arrayRdd.sortBy(line => TopImplit(line._1,line._2,line._3))
     println(arraySort.collect().toBuffer)

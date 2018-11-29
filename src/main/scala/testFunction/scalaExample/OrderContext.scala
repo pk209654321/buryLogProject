@@ -1,4 +1,6 @@
-package testFunction
+package testFunction.scalaExample
+
+import testFunction.TopImplit
 
 object OrderContext {
   implicit val topAction  = new Ordering[TopImplit] {
