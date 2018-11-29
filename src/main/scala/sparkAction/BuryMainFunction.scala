@@ -65,7 +65,7 @@ object BuryMainFunction {
       }
     })
     //清洗出客户端数据行为数据
-    BuryClientTable.cleanClientData(filterClient, hc, diffDay)
+    //BuryClientTable.cleanClientData(filterClient, hc, diffDay)
     val filterWeb: RDD[BuryLogin] = filterAction.filter(line => {
       val source: Int = line.source
       if (source == 3) {
@@ -76,7 +76,7 @@ object BuryMainFunction {
       }
     })
     //清洗出网页端行为数据
-    BuryWebTable.cleanWebData(filterWeb,hc,diffDay)
+    //BuryWebTable.cleanWebData(filterWeb,hc,diffDay)
 
     sc.stop()
   }
