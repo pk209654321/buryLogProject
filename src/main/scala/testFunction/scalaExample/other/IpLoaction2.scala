@@ -1,4 +1,4 @@
-package testFunction.scalaExample
+package testFunction.scalaExample.other
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD

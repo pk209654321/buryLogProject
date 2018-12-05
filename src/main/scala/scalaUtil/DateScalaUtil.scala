@@ -71,6 +71,12 @@ object DateScalaUtil {
   }
 
 
+
+  def getTest(aa:String){
+
+  }
+
+
   def main(args: Array[String]): Unit = {
 //    val nextDate: Date = getNextDate(new Date(),-1)
 //    val string: String = date2String(nextDate,2)

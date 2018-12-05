@@ -6,8 +6,9 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.{SparkContext, SparkConf}
-import scalaUtil.{LocalOrLine, DateScalaUtil}
+import org.apache.spark.{SparkConf, SparkContext}
+import scalaUtil.{DateScalaUtil, LocalOrLine}
+import sparkAction.mapAction.BuryLoginReportNew
 
 /**
   * Created by lenovo on 2018/11/16.
@@ -27,29 +28,14 @@ object BuryMainUser {
     val sc: SparkContext = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
     val hc: HiveContext = new HiveContext(sc)
-    //val file: RDD[String] = sc.textFile("C:\\Users\\lenovo\\Desktop\\bushu\\access.log",4)
     val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
+    //val realPath = hdfsPath
     val file: RDD[String] = sc.textFile(realPath, 1)
     val filterBlank: RDD[String] = file.filter(line => {
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
-    val map: RDD[BuryLogin] = filterBlank.map(line => {
-      //替换字符串
-      val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
-      val jsonAndIp: Array[String] = all.split("&")
-      if (jsonAndIp.length == 2) {
-        val jsonBury: String = jsonAndIp(0)
-        val ipStr: String = jsonAndIp(1)
-        val buryLogin: BuryLogin = JSON.parseObject(jsonBury, classOf[BuryLogin])
-        buryLogin.ipStr = ipStr
-        buryLogin
-      } else {
-        JSON.parseObject(all, classOf[BuryLogin])
-      }
-
-    }).cache()
-
-
+    //清洗数据
+    val map: RDD[BuryLogin] = filterBlank.map(BuryMainFunction.cleanCommonFunction)
     val filterVisit: RDD[BuryLogin] = map.filter(_.logType == 1) //过滤出访问日志Data
     //清洗出访问日志数据
     //BuryVisitTable.cleanVisitData(filterVisit, hc, diffDay)
@@ -78,7 +64,7 @@ object BuryMainUser {
     //清洗出网页端行为数据
     //BuryWebTable.cleanWebData(filterWeb,hc,diffDay)
     //用户启动上报
-    BuryLoginReport.repotUserLogin(filterVisit)
+    BuryLoginReportNew.repotUserLogin(filterVisit)
 
     sc.stop()
   }
