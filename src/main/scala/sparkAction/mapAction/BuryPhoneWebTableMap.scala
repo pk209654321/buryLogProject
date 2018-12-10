@@ -15,7 +15,7 @@ import scala.collection.mutable
   *
   */
 object BuryPhoneWebTableMap {
-   private val TABLE: String = ConfigurationManager.getProperty("actionTableMobile")
+   private val TABLE: String = ConfigurationManager.getProperty("actionTablePhoneWeb")
   def cleanPhoneWebData(filterClient: RDD[BuryLogin],hc: HiveContext,diffDay:Int) ={
     val map: RDD[Row] = filterClient.map(one => {
       val line = one.line

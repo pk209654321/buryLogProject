@@ -55,7 +55,7 @@ object BuryMainFunction {
     BuryPhoneWebTableMap.cleanPhoneWebData(filterPhoneWeb,hc,diffDay)
     val filterVisit: RDD[BuryLogin] = map.filter(_.logType == 1) //过滤出访问日志Data
     //清洗出访问日志数据
-    //BuryVisitTableMap.cleanVisitData(filterVisit, hc, diffDay)
+    BuryVisitTableMap.cleanVisitData(filterVisit, hc, diffDay)
     //=========================================================================================
     val filterAction: RDD[BuryLogin] = map.filter(_.logType == 2) //过滤出行为日志Data
     val filterClient: RDD[BuryLogin] = filterAction.filter(line => {
@@ -68,7 +68,7 @@ object BuryMainFunction {
       }
     })
     //清洗出客户端数据行为数据
-    //BuryClientTableMap.cleanClientData(filterClient, hc, diffDay)
+    BuryClientTableMap.cleanClientData(filterClient, hc, diffDay)
     val filterWeb: RDD[BuryLogin] = filterAction.filter(line => {
       val source: Int = line.source
       if (source == 3) {
@@ -79,7 +79,7 @@ object BuryMainFunction {
       }
     })
     //清洗出网页端行为数据
-    //BuryWebTableMap.cleanWebData(filterWeb,hc,diffDay)
+    BuryWebTableMap.cleanWebData(filterWeb,hc,diffDay)
 
     sc.stop()
   }
