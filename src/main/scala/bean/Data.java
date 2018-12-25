@@ -22,10 +22,11 @@ public class Data {
     }
 
     public static void main(String[] args) {
-        Data data = new Data();
-        data.setTime_login("1");
-        data.setTime_login("1");
-        String s = JSON.toJSONString(data);
-        System.out.println(s);
+        String string ="url=https://download.gushi.com/app/download/competitionDown.html?sceneId=1&preview=0|task_id=1003003";
+        int i = string.indexOf("=");
+        String substring = string.substring(0, i);
+        String sub2 = string.substring(i + 1, string.length());
+        System.out.println(substring);
+        System.out.println(sub2);
     }
 }

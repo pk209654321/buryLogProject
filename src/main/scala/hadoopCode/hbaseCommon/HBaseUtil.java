@@ -1,4 +1,4 @@
-package hbaseCommon;
+package hadoopCode.hbaseCommon;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.fastjson.JSON;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -125,6 +126,7 @@ public class HBaseUtil {
 //                admin.deleteTable(tn);
 //                System.out.println("表删除成功.....");
                 System.out.println("表存在");
+                return;
             }
             // 创建表结构对象
             HTableDescriptor htd = new HTableDescriptor(tn);
@@ -392,5 +394,8 @@ public class HBaseUtil {
         } finally {
             close();
         }
+    }
+
+    public static void main(String[] args) {
     }
 }

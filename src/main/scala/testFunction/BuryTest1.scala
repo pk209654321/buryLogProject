@@ -7,8 +7,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{DateScalaUtil, LocalOrLine}
-import sparkAction.BuryMainFunction
-import sparkAction.mapAction.{BuryClientTableMap, BuryPhoneWebTableMap, BuryVisitTableMap, BuryWebTableMap}
 
 /**
   * Created by lenovo on 2018/11/16.
@@ -34,25 +32,31 @@ object BuryTest1 {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
-    val value: RDD[sparkAction.BuryLogin] = filterBlank.map(BuryMainFunction.cleanCommonFunction)
-    //val filterPhoneWeb: RDD[BuryLogin] = map.filter(_.source==5)//手机web
-    //清洗出手机web端的日志
-    //BuryPhoneWebTableMap.cleanPhoneWebData(filterPhoneWeb,hc,diffDay)
-    val filterVisit: RDD[sparkAction.BuryLogin] = value.filter(_.source == 4)
-
-    val fv = filterVisit.filter(one => {
-      val line = one.line
-      val i = line.indexOf("application=web")
-      if (i >= 0) {
-        true
+    val value: RDD[BuryTest1] = filterBlank.map(line => {
+      val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
+      val jsonAndIp: Array[String] = all.split("&")
+      if (jsonAndIp.length >= 2) {
+        //如果有ip和 httpurl 代'&'的埋点类容
+        val i = all.lastIndexOf("&")
+        val bury = all.substring(0, i)
+        val ipTemp = all.substring(i + 1, all.length)
+        var buryLogin=BuryTest1("","",0,0,"")
+        try {
+           buryLogin = JSON.parseObject(bury, classOf[BuryTest1])
+        } catch{
+          case e => println(all)
+        }
+        buryLogin.ipStr = ipTemp
+        buryLogin
       } else {
-        false
+        JSON.parseObject(all, classOf[BuryTest1])
       }
     })
-    BuryPhoneWebTableMap.cleanPhoneWebData(fv, hc, diffDay)
+
+    value.collect()
   }
-
-
 }
 
+
+case class BuryTest1(var line: String, var sendTime: String, var source: Int, var logType: Int, var ipStr: String)
 

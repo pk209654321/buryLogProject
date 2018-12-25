@@ -19,40 +19,30 @@
 
     <dependencies>
         <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+            <version>1.4.7</version>
+        </dependency>
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>${scala.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
-
-        <!--    <dependency>
-                <groupId>org.apache.spark</groupId>
-                <artifactId>spark-streaming_2.10</artifactId>
-                <version>${spark.version}</version>
-            </dependency>
-    -->
-        <!--  <dependency>
-              <groupId>org.apache.spark</groupId>
-              <artifactId>spark-streaming-kafka_2.10</artifactId>
-              <version>${spark.version}</version>
-          </dependency>-->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-hive_2.10</artifactId>
@@ -63,18 +53,26 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.47</version>
         </dependency>
-        <!--  <dependency>
-              <groupId>org.apache.spark</groupId>
-              <artifactId>spark-streaming-flume_2.10</artifactId>
-              <version>${spark.version}</version>
-          </dependency>-->
-
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.38</version>
         </dependency>
-
+        <!--<dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-streaming_2.10</artifactId>
+                <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+              <groupId>org.apache.spark</groupId>
+              <artifactId>spark-streaming-kafka_2.10</artifactId>
+              <version>${spark.version}</version>
+        </dependency>-->
+        <!--  <dependency>
+              <groupId>org.apache.spark</groupId>
+              <artifactId>spark-streaming-flume_2.10</artifactId>
+              <version>${spark.version}</version>
+          </dependency>-->
         <!-- <dependency>
              <groupId>redis.clients</groupId>
              <artifactId>jedis</artifactId>

@@ -82,6 +82,5 @@ object MyUtils {
     val tp = rules(index)
     val province = tp._3
     println(province)
-
   }
 }

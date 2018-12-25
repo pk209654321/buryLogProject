@@ -6,7 +6,7 @@ import org.apache.spark.sql.types._
   * Created by lenovo on 2018/11/16.
   */
 object StructUtil {
-  //按字段划分
+  //按字段划分(弃用)
   val structClient = StructType(List(
     StructField("user_id", IntegerType),
     StructField("guid", StringType),
@@ -82,11 +82,23 @@ object StructUtil {
     StructField("meid", StringType),
     StructField("idfa", StringType)
   ))
-//map类型划分
-  val structClientMap=StructType(List(StructField("map_col",MapType(StringType,StringType))))
-  val structWebMap=StructType(List(StructField("map_col",MapType(StringType,StringType))))
-  val structVisitMap=StructType(List(StructField("map_col",MapType(StringType,StringType))))
-  val structPhoneWebMap=StructType(List(StructField("map_col",MapType(StringType,StringType))))
-  //val structVisitArray=StructType(List(StructField("array_col",ArrayType(StringType))))
-  //val structVisitString=StructType(List(StructField("string_col",StringType)))
+  //map类型划分
+  val structClientMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
+  val structWebMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
+  val structVisitMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
+  val structPhoneWebMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
+  //map_ip类型划分
+  val structCommonMapIp=StructType(List(StructField("map_col",MapType(StringType,StringType)),
+    StructField("sip",StringType)
+  ))
+  //map_ip_map类型划分
+  val structCommonMapIpMap=StructType(List(StructField("map_col",MapType(StringType,StringType)),
+    StructField("sip",StringType),
+    StructField("other_map",MapType(StringType,StringType))
+  ))
+  //string_ip_map类型划分
+  val structCommonStringIpMap=StructType(List(StructField("log_str",StringType),
+    StructField("sip",StringType),
+    StructField("other_map",MapType(StringType,StringType))
+  ))
 }
