@@ -45,7 +45,7 @@ object BuryMainFunction {
       try {
         buryLogin = JSON.parseObject(bury, classOf[BuryLogin])
       } catch {
-        case e => println(s"error_log:${all}")
+        case e:Throwable => println(s"error_log:${all}")
       }
       buryLogin.ipStr = ipTemp
       buryLogin
@@ -53,7 +53,7 @@ object BuryMainFunction {
       try {
         JSON.parseObject(all, classOf[BuryLogin])
       } catch {
-        case e => MailUtil.sendMail("spark日志清洗调度","发现错误日志:"+all); BuryLogin("","",0,0,"")
+        case e:Throwable => MailUtil.sendMail("spark日志清洗调度","发现错误日志:"+all); BuryLogin("","",0,0,"")
       }
     }
   }
@@ -143,7 +143,7 @@ object BuryMainFunction {
       }
       sc.stop()
     } catch {
-      case e => MailUtil.sendMail("spark日志清洗调度","清洗日志失败:"+e.getMessage)
+      case e:Throwable => MailUtil.sendMail("spark日志清洗调度","清洗日志失败:"+e.printStackTrace())
     }
   }
 }

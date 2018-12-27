@@ -58,7 +58,7 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.38</version>
         </dependency>
-        <!--<dependency>
+        <dependency>
                 <groupId>org.apache.spark</groupId>
                 <artifactId>spark-streaming_2.10</artifactId>
                 <version>${spark.version}</version>
@@ -67,7 +67,12 @@
               <groupId>org.apache.spark</groupId>
               <artifactId>spark-streaming-kafka_2.10</artifactId>
               <version>${spark.version}</version>
-        </dependency>-->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.10</artifactId>
+            <version>0.8.2.1</version>
+        </dependency>
         <!--  <dependency>
               <groupId>org.apache.spark</groupId>
               <artifactId>spark-streaming-flume_2.10</artifactId>

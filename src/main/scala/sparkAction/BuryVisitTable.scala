@@ -76,7 +76,6 @@ object BuryVisitTable {
     val createDataFrame: DataFrame = hc.createDataFrame(map, StructUtil.structVisit)
     createDataFrame.registerTempTable("StockShopVisit")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(diffDay,1)
-    createDataFrame
     hc.sql(s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopVisit")
   }
 }
