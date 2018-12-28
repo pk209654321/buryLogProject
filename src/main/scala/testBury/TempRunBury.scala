@@ -27,11 +27,14 @@ object TempRunBury {
     sc.setLogLevel("WARN")
     val hc: HiveContext = new HiveContext(sc)
     val realPath =""
+    val outPath=""
     val file: RDD[String] = sc.textFile(realPath, 1)
     val filterBlank: RDD[String] = file.filter(line => {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
     val map: RDD[BuryLogin] = filterBlank.map(cleanCommonFunction).cache()
+    val tempRdd = map.filter(_.line.indexOf("")>0)
+    tempRdd.saveAsTextFile("")
   }
 }
