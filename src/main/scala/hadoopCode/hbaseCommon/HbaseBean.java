@@ -50,4 +50,8 @@ public class HbaseBean {
     public void setValue(String value) {
         this.value = value;
     }
+
+    public static void main(String[] args) {
+        System.out.println("111");
+    }
 }
