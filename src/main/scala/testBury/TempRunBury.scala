@@ -17,8 +17,9 @@ import sparkAction.BuryMainFunction.cleanCommonFunction
 object TempRunBury {
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
-
-    var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
+    //获取当前类的名称
+    val className = this.getClass.getSimpleName
+    var sparkConf: SparkConf = new SparkConf().setAppName(s"${className}")
     if (local) {
       System.setProperty("HADOOP_USER_NAME", "wangyd")
       sparkConf = sparkConf.setMaster("local[*]")
