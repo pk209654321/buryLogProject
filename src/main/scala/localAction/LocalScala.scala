@@ -7,8 +7,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, LocalOrLine}
 import sparkAction.BuryMainFunction
-import testFunction.BuryTest1
-import testFunction.BuryTest1.hdfsPath
 
 /**
   * ClassName LocalScala
