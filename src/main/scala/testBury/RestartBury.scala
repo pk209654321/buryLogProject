@@ -6,19 +6,17 @@ import com.alibaba.fastjson.JSON
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.hive.HiveContext
-import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
+import scalaUtil.{DateScalaUtil, LocalOrLine}
 import sparkAction.BuryLogin
-import sparkAction.BuryMainFunction.cleanCommonFunction
 
 /**
   * ClassName TempRunBury
-  * Description TODO
+  * Description TODO 该类是用于将日志平台中的日志按时间过滤,进行数据重刷
   * Author lenovo
   * Date 2018/12/28 9:01
   **/
-object TempRunBury {
-
+object RestartBury {
+  private val filterTime:String="" //按什么时间过滤
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
     //获取当前类的名称
@@ -63,7 +61,7 @@ object TempRunBury {
           val date: Date = DateScalaUtil.string2Date(time,1)
           tmp=DateScalaUtil.date2String(date,1)
         }
-        if (tmp=="2019-01-08"){
+        if (tmp==filterTime){
           line
         }else{
           ""
