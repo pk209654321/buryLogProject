@@ -55,7 +55,7 @@ object TempRunBury {
       }
 
       if(buryLogin.source>0){
-        val time = buryLogin.sendTime
+        val time = buryLogin.sendTime.trim
         var tmp=""
         if(StringUtils.isNumeric(time)){
           tmp=DateScalaUtil.tranTimeToString(time,1)

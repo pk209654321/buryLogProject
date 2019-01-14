@@ -65,7 +65,7 @@ object BuryMainFunction {
 
       var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
       if (local) {
-        System.setProperty("HADOOP_USER_NAME", "wangyd")
+        //System.setProperty("HADOOP_USER_NAME", "wangyd")
         sparkConf = sparkConf.setMaster("local[*]")
       }
       val sc: SparkContext = new SparkContext(sparkConf)

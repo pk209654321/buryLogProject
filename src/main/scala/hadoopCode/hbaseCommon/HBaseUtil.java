@@ -1,10 +1,8 @@
 package hadoopCode.hbaseCommon;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DecimalFormat;
+import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
@@ -58,7 +56,9 @@ public class HBaseUtil {
         //这个ip和端口是在hadoop/mapred-site.xml配置文件配置的
         //conf.set("hbase.master", ip+":"+port1);
    }
-        
+
+
+
 
     /**
      * 获取连接
@@ -94,6 +94,99 @@ public class HBaseUtil {
             System.out.println("连接关闭失败！");
             e.printStackTrace();
         }
+    }
+
+
+    private static byte[][] genSplitKeys(int regions){
+        //定义一个存放分区键的数组
+        String[] keys = new String[regions];
+        //目前推算，region个数不会超过2位数，所以region分区键格式化为两位数字所代表的字符串
+        DecimalFormat df = new DecimalFormat("00");
+        for(int i = 0; i < regions; i ++){
+            keys[i] = df.format(i) + "|";
+        }
+
+        byte[][] splitKeys = new byte[regions][];
+        //生成byte[][]类型的分区键的时候，一定要保证分区键是有序的
+        TreeSet<byte[]> treeSet = new TreeSet<>(Bytes.BYTES_COMPARATOR);
+        for(int i = 0; i < regions; i++){
+            treeSet.add(Bytes.toBytes(keys[i]));
+        }
+
+        Iterator<byte[]> splitKeysIterator = treeSet.iterator();
+        int index = 0;
+        while(splitKeysIterator.hasNext()){
+            byte[] b = splitKeysIterator.next();
+            splitKeys[index ++] = b;
+        }
+        return splitKeys;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public static String genRowKey(String regionCode, String call1, String buildTime, String call2, String flag, String duration){
+        StringBuilder sb = new StringBuilder();
+        sb.append(regionCode + "_")
+                .append(call1 + "_")
+                .append(buildTime + "_")
+                .append(call2 + "_")
+                .append(flag + "_")
+                .append(duration);
+        return sb.toString();
+    }
+
+    /**
+     *
+     *
+     * @param call1
+     * @param buildTime
+     * @param regions
+     * @return
+     */
+    public static String genRegionCode(String call1, String buildTime, int regions){
+        int len = call1.length();
+        //取出后4位号码
+        String lastPhone = call1.substring(len - 4);
+        //取出年月
+        String ym = buildTime
+                .replaceAll("-", "")
+                .replaceAll(":", "")
+                .replaceAll(" ", "")
+                .substring(0, 6);
+        //离散操作1
+        Integer x = Integer.valueOf(lastPhone) ^ Integer.valueOf(ym);
+        int a = 10;
+        int b = 20;
+        a = a ^ b;
+        b = a ^ b;
+        a = a ^ b;
+        //离散操作2
+        int y = x.hashCode();
+        //生成分区号
+        int regionCode = y % regions;
+        //格式化分区号
+        DecimalFormat df = new DecimalFormat("00");
+        return  df.format(regionCode);
+    }
+
+    /**
+     * 创建表_split
+     * @param conf
+     * @param tableName
+     * @param columnFamily
+     * @throws IOException
+     */
+    public static void createTableSplit(Configuration conf, String tableName, int regions, String... columnFamily) throws IOException {
+        admin = getConnection().getAdmin();
+        if(admin.tableExists(TableName.valueOf(tableName))) return;
+        HTableDescriptor htd = new HTableDescriptor(TableName.valueOf(tableName));
+        for(String cf: columnFamily){
+            htd.addFamily(new HColumnDescriptor(cf));
+        }
+        admin.createTable(htd, genSplitKeys(regions));
+        close();
     }
 
     /**
