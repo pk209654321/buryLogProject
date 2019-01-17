@@ -1,5 +1,6 @@
 package testBury
 
+import hadoopCode.hbaseCommon.HBaseUtil
 import scalaUtil.HttpPostUtil
 
 /**
@@ -10,10 +11,8 @@ import scalaUtil.HttpPostUtil
   **/
 object TempTest {
   def main(args: Array[String]): Unit = {
-   for(i <- 0 to 100){
-     Thread.sleep(1000)
-     println("开始发送")
-     //HttpPostUtil.doHttpPost("","https://mp.weixin.qq.com/s/4oFXWuyLqFfg4P091ui68A")
-   }
+    val line="access_time="
+    val strings = line.split("=")
+    println(strings.size)
   }
 }

@@ -3,12 +3,13 @@ package testBury
 import java.util.Date
 
 import com.alibaba.fastjson.JSON
+import hadoopCode.hbaseCommon.HBaseUtil
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
-import sparkAction.BuryLogin
+import sparkAction.{BuryLogin, BuryMainFunction}
 import sparkAction.BuryMainFunction.cleanCommonFunction
 
 /**
@@ -31,46 +32,18 @@ object TempRunBury {
     val sc: SparkContext = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
     //val hc: HiveContext = new HiveContext(sc)
-    val realPath ="E:\\desk\\log"
+    val realPath ="E:\\desk\\日志\\bury.1545840005744"
     val file: RDD[String] = sc.textFile(realPath, 1)
     val filterBlank: RDD[String] = file.filter(line => {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
+    val unit = filterBlank.map(BuryMainFunction.cleanCommonFunction)
+    val l = unit.filter(_.logType==1).count()
+    println(l)
 
-    filterBlank.map(line => {
-      val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
-      val jsonAndIp: Array[String] = all.split("&")
-      var buryLogin=BuryLogin("","",0,0,"")
-      if (jsonAndIp.length >= 2) {
-        //如果有ip和 httpurl 代'&'的埋点类容
-        val i = all.lastIndexOf("&")
-        val bury = all.substring(0, i)
-        val ipTemp = all.substring(i + 1, all.length)
-        try {
-          buryLogin = JSON.parseObject(bury, classOf[BuryLogin])
-        } catch {
-          case e:Throwable => println(s"error_log:${all}")
-        }
-      }
 
-      if(buryLogin.source>0){
-        val time = buryLogin.sendTime.trim
-        var tmp=""
-        if(StringUtils.isNumeric(time)){
-          tmp=DateScalaUtil.tranTimeToString(time,1)
-        }else{
-          val date: Date = DateScalaUtil.string2Date(time,1)
-          tmp=DateScalaUtil.date2String(date,1)
-        }
-        if (tmp=="2019-01-08"){
-          line
-        }else{
-          ""
-        }
-      }else{
-        ""
-      }
-    }).filter(StringUtils.isNotBlank(_)).coalesce(1).saveAsTextFile("e:\\wang08")
+
+
   }
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import com.alibaba.fastjson.JSON;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -67,14 +68,14 @@ public class HBaseUtil {
      */
     public synchronized static Connection getConnection() {
         try {
-            if (null == con || con.isClosed()) {
-                // 获得连接对象
-                con = ConnectionFactory.createConnection(conf);
-            }
-        } catch (IOException e) {
-            System.out.println("获取连接失败!");
-            e.printStackTrace();
+        if (null == con || con.isClosed()) {
+            // 获得连接对象
+            con = ConnectionFactory.createConnection(conf);
         }
+    } catch (IOException e) {
+        System.out.println("获取连接失败!");
+        e.printStackTrace();
+    }
 
         return con;
     }
@@ -137,6 +138,32 @@ public class HBaseUtil {
         return sb.toString();
     }
 
+    public static String getVisitRowKey(String regionCode,String timeStr,String guid,String offlineTime){
+        /**
+        　　* @Description: TODO 获取访问日志的RowKey(分区号+时间戳+guid+offline_time)
+        　　* @param [regionCode, timeStr, index]
+        　　* @return java.lang.String
+        　　* @throws
+        　　* @author lenovo
+        　　* @date 2019/1/15 13:09
+        　　*/
+        StringBuilder sb = new StringBuilder();
+        sb.append(regionCode + "_")
+                .append(timeStr+"_")
+                .append(guid+"_")
+                .append(offlineTime);
+        return sb.toString();
+    }
+
+
+    public static String getPartitonCode(String buildTime ,int regions){
+        //201901151607
+        String substring = buildTime.substring(0, 8);
+        int partitionCode = substring.hashCode() % regions;
+        DecimalFormat df = new DecimalFormat("00");
+        return  df.format(partitionCode);
+    }
+
     /**
      *
      *
@@ -173,12 +200,11 @@ public class HBaseUtil {
 
     /**
      * 创建表_split
-     * @param conf
      * @param tableName
      * @param columnFamily
      * @throws IOException
      */
-    public static void createTableSplit(Configuration conf, String tableName, int regions, String... columnFamily) throws IOException {
+    public static void createTableSplit(String tableName, int regions, String... columnFamily) throws IOException {
         admin = getConnection().getAdmin();
         if(admin.tableExists(TableName.valueOf(tableName))) return;
         HTableDescriptor htd = new HTableDescriptor(TableName.valueOf(tableName));
@@ -293,7 +319,9 @@ public class HBaseUtil {
         try {
             t = getConnection().getTable(TableName.valueOf(tableName));
             for (int i = 0, j = list.size(); i < j; i++) {
-                json = (JSONObject) list.get(i);
+                Object o = list.get(i);
+                String string = JSON.toJSONString(o);
+                json = JSONObject.parseObject(string);
                 put = new Put(Bytes.toBytes(json.getString("rowKey")));
                 put.addColumn(Bytes.toBytes(json.getString("family")),
                         Bytes.toBytes(json.getString("qualifier")),
@@ -306,7 +334,7 @@ public class HBaseUtil {
             System.out.println(tableName + " 更新失败!");
             e.printStackTrace();
         } finally {
-            close();
+            //close();
         }
     }
     
@@ -489,5 +517,17 @@ public class HBaseUtil {
     }
 
     public static void main(String[] args) {
+        //insertBatch("student", );
+        Object a=null;
+        Object hbaseBean = new HbaseBean();
+        ((HbaseBean) hbaseBean).setRowKey("0001");
+        ((HbaseBean) hbaseBean).setFamily("info");
+        ((HbaseBean) hbaseBean).setQualifier("line");
+        ((HbaseBean) hbaseBean).setValue("nihaowangyadong");
+        String string = JSON.toJSONString(hbaseBean);
+        JSONObject jsonObject = JSONObject.parseObject(string);
+        String family = jsonObject.getString("family");
+        System.out.println(family);
+
     }
 }

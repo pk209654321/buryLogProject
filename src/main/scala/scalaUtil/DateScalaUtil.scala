@@ -11,6 +11,8 @@ object DateScalaUtil {
   private val fastDateFormat: FastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss")
   private val fastDateFormat1: FastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd")
   private val fastDateFormat2: FastDateFormat = FastDateFormat.getInstance("yy-MM-dd")
+  private val fastDateFormat3: FastDateFormat = FastDateFormat.getInstance("yyMMddHHmmss")
+  private val fastDateFormat4: FastDateFormat = FastDateFormat.getInstance("yyMMdd")
   //时间戳格式化toString
   def tranTimeToString(dateLong:String,flag:Int) :String={
     flag match {
@@ -22,6 +24,9 @@ object DateScalaUtil {
       }
       case 2=> {
         fastDateFormat2.format(new Date((dateLong+"000").toLong))
+      }
+      case 3=> {
+        fastDateFormat3.format(new Date((dateLong+"000").toLong))
       }
     }
   }
@@ -38,6 +43,12 @@ object DateScalaUtil {
       case 2=> {
         fastDateFormat2.format(date)
       }
+      case 3=> {
+        fastDateFormat3.format(date)
+      }
+      case 4=> {
+        fastDateFormat4.format(date)
+      }
     }
   }
 
@@ -52,6 +63,9 @@ object DateScalaUtil {
       }
       case 2=> {
         fastDateFormat2.parse(dateStr)
+      }
+      case 3=> {
+        fastDateFormat3.parse(dateStr)
       }
     }
   }
