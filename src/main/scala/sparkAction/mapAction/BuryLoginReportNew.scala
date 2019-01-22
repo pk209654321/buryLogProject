@@ -46,19 +46,22 @@ object BuryLoginReportNew {
     })
 
     //过滤掉user_id是0的,去重
-    val disRdd: RDD[(String, String)] = userTimeRdd.distinct().filter(_._1!="0")
-    disRdd.foreach(line => {
-      val user_id = line._1
-      val access_time = line._2
-      val time_login: String = DateScalaUtil.tranTimeToString(access_time,0)
-      val data: Data = new Data()
-      data.setTime_login(time_login)
-      val userStr: UserLoginStr = new UserLoginStr()
-      userStr.setType(3)
-      userStr.setUserId(user_id.toInt)
-      userStr.setData(data)
-      HttpPostUtil.sendMessage(userStr,httpUrl)
-    })
+//    val disRdd: RDD[(String, String)] = userTimeRdd.distinct().filter(_._1!="0")
+//    disRdd.foreach(line => {
+//      val user_id = line._1
+//      val access_time = line._2
+//      val time_login: String = DateScalaUtil.tranTimeToString(access_time,0)
+//      val data: Data = new Data()
+//      data.setTime_login(time_login)
+//      val userStr: UserLoginStr = new UserLoginStr()
+//      userStr.setType(3)
+//      userStr.setUserId(user_id.toInt)
+//      userStr.setData(data)
+//      HttpPostUtil.sendMessage(userStr,httpUrl)
+//    })
+    val l = userTimeRdd.distinct().filter(_._1!="0").count()
+    println("------------------------------------count"+l)
+
 
 
   }

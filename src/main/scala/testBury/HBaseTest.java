@@ -16,10 +16,6 @@ import java.util.List;
 public class HBaseTest {
     public static void main(String[] args) throws Exception{
         HBaseUtil.init("");
-        Put put = new Put(Bytes.toBytes("row001"));
-        ArrayList<Put> puts = new ArrayList<>();
-        put.addColumn(Bytes.toBytes("info1"), Bytes.toBytes("content"), Bytes.toBytes("wwwwwwwwwwwwwwwwwww"));
-        puts.add(put);
-        HBaseUtil.putByHTable("hbase_bury_test", puts);
+        HBaseUtil.createTableSplit("hbase_test1", 1,"f1");
     }
 }

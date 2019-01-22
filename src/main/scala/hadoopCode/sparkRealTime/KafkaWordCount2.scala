@@ -3,13 +3,16 @@ package hadoopCode.sparkRealTime
 import java.util
 import java.util.Date
 
-import hadoopCode.hbaseCommon.{HBaseUtil, HbaseBean}
+import conf.ConfigurationManager
+import hadoopCode.hbaseFormal.util.HBaseUtil
 import org.apache.commons.lang3.StringUtils
+import org.apache.hadoop.hbase.client.Put
+import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.dstream.{DStream, ReceiverInputDStream}
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import scalaUtil.{DateScalaUtil, RandomCharData}
+import scalaUtil.{DateScalaUtil, MailUtil, RandomCharData}
 import sparkAction.{BuryLogin, BuryMainFunction}
 
 
@@ -17,7 +20,10 @@ import sparkAction.{BuryLogin, BuryMainFunction}
   * Created by zx on 2017/10/17.
   */
 object KafkaWordCount2 {
-
+  private val HBASE_TABLE_NAME: String = ConfigurationManager.getProperty("hbase.tablename")
+  private val KAFKA_ZK_QUORUM: String = ConfigurationManager.getProperty("kafka.zk.quorum")
+  private val KAFKA_GROUP_NAME: String = ConfigurationManager.getProperty("kafka.group.name")
+  private val KAFKA_TOPIC_NAME: String = ConfigurationManager.getProperty("kafka.topic.name")
 
   def main(args: Array[String]): Unit = {
 
@@ -26,9 +32,9 @@ object KafkaWordCount2 {
     val conf = new SparkConf().setAppName(s"$className").setMaster("local[*]")
     val sc = new SparkContext(conf)
     val ssc = new StreamingContext(sc, Seconds(10))
-    val zkQuorum = "leader:2181"
-    val groupId = "group_test_1"
-    val topic = Map[String, Int]("bury_test_1" -> 1)
+    val zkQuorum = KAFKA_ZK_QUORUM
+    val groupId = KAFKA_GROUP_NAME
+    val topic = Map[String, Int](KAFKA_TOPIC_NAME -> 1)
 
     //创建DStream，需要KafkaDStream
     val data: ReceiverInputDStream[(String, String)] = KafkaUtils.createStream(ssc, zkQuorum, groupId, topic)
@@ -47,7 +53,6 @@ object KafkaWordCount2 {
       if (StringUtils.isNumeric(time)) {
         time = DateScalaUtil.tranTimeToString(time, 0)
       }
-
       time = time.replaceAll("-", "")
         .replaceAll(":", "")
         .replaceAll(" ", "")
@@ -61,18 +66,23 @@ object KafkaWordCount2 {
     })
     rowKeyContent.foreachRDD(rdds => {
       rdds.foreachPartition(par => {
-        val list = new util.ArrayList[HbaseBean]()
+        //val list = new util.ArrayList[HbaseBean]()
+        HBaseUtil.init("")
+        val puts = new util.ArrayList[Put]()
         par.foreach(line => {
-          val bean = new HbaseBean
-          bean.setRowKey(line._1)
-          bean.setFamily("info1")
-          bean.setQualifier("content")
-          bean.setValue(line._2)
-          list.add(bean)
+          val rowKey = line._1
+          val value = line._2
+          val put = new Put(Bytes.toBytes(rowKey))
+          put.addColumn(Bytes.toBytes("f1"),Bytes.toBytes("content"),Bytes.toBytes(value))
+          puts.add(put)
         })
-        HBaseUtil.insertBatch("hbase_bury_test",list)
+        try {
+          val l = HBaseUtil.putByHTable(HBASE_TABLE_NAME, puts)
+          println("hbase insert success 耗费时间:"+l)
+        } catch {
+          case e:Exception => MailUtil.sendMail("sparkstreaming error","hbase insert 失败:"+e.getMessage);e.printStackTrace()
+        }
       })
-      HBaseUtil.close()
     })
     ssc.start()
     ssc.awaitTermination()

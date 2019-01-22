@@ -23,6 +23,6 @@
 <configuration>
 	<property>
 	<name>hbase.zookeeper.quorum</name>
-	<value>leader,slave1</value>
+	<value>master</value>
 	</property>
 </configuration>

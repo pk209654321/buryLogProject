@@ -17,12 +17,12 @@ public class HttpURLConnectionPost {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        readContentFromPost("");
+        //readContentFromPost("");
     }
 
-    public static void readContentFromPost(String lines) throws IOException {
+    public static void readContentFromPost(String lines,String url) throws IOException {
         // Post请求的url，与get不同的是不需要带参数
-        URL postUrl = new URL("http://192.168.136.101/wyd/test");
+        URL postUrl = new URL(url);
         // 打开连接
         HttpURLConnection connection = (HttpURLConnection) postUrl.openConnection();
         // 设置是否向connection输出，因为这个是post请求，参数要放在
@@ -38,7 +38,8 @@ public class HttpURLConnectionPost {
         connection.setInstanceFollowRedirects(true);
         // 配置本次连接的Content-type，配置为application/x-www-form-urlencoded的
         // 意思是正文是urlencoded编码过的form参数
-        connection.setRequestProperty("Content-Type", "application/json;charset=utf-8");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("charset", "utf-8");
         // 连接，从postUrl.openConnection()至此的配置必须要在connect之前完成，
         // 要注意的是connection.getOutputStream会隐含的进行connect。
         connection.connect();

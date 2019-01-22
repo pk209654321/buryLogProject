@@ -157,11 +157,10 @@ public class HBaseUtil {
 
 
     public static String getPartitonCode(String buildTime ,int regions){
-        //201901151607
-        String substring = buildTime.substring(0, 8);
-        int partitionCode = substring.hashCode() % regions;
+        String code = buildTime.substring(0, 8);//截取到天
+        int i =Math.abs(code.hashCode() % regions);
         DecimalFormat df = new DecimalFormat("00");
-        return  df.format(partitionCode);
+        return  df.format(i);
     }
 
     /**
@@ -205,14 +204,14 @@ public class HBaseUtil {
      * @throws IOException
      */
     public static void createTableSplit(String tableName, int regions, String... columnFamily) throws IOException {
-        admin = getConnection().getAdmin();
+        Admin admin = getConnection().getAdmin();
         if(admin.tableExists(TableName.valueOf(tableName))) return;
         HTableDescriptor htd = new HTableDescriptor(TableName.valueOf(tableName));
         for(String cf: columnFamily){
             htd.addFamily(new HColumnDescriptor(cf));
         }
         admin.createTable(htd, genSplitKeys(regions));
-        close();
+
     }
 
     /**

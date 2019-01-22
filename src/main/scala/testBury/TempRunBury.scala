@@ -11,6 +11,7 @@ import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
 import sparkAction.{BuryLogin, BuryMainFunction}
 import sparkAction.BuryMainFunction.cleanCommonFunction
+import sparkAction.mapIpAction.BuryClientWebTableMapIp
 
 /**
   * ClassName TempRunBury
@@ -31,16 +32,27 @@ object TempRunBury {
     }
     val sc: SparkContext = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
+    val hc: HiveContext = new HiveContext(sc)
     //val hc: HiveContext = new HiveContext(sc)
-    val realPath ="E:\\desk\\日志\\bury.1545840005744"
+    val realPath ="E:\\desk\\日志"
     val file: RDD[String] = sc.textFile(realPath, 1)
     val filterBlank: RDD[String] = file.filter(line => {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
     val unit = filterBlank.map(BuryMainFunction.cleanCommonFunction)
-    val l = unit.filter(_.logType==1).count()
-    println(l)
+    val filterAction: RDD[BuryLogin] = unit.filter(_.logType == 2) //过滤出行为日志Data
+    val filterWeb: RDD[BuryLogin] = filterAction.filter(line => {
+      val source: Int = line.source
+      if (source == 3) {
+        //过滤出网页端数据k
+        true
+      } else {
+        false
+      }
+    })
+    BuryClientWebTableMapIp.cleanClientWebData(filterWeb, hc, 0)
+
 
 
 

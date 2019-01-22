@@ -14,10 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.text.DecimalFormat;
+import java.util.*;
 
 /**
  * HBase 工具类
@@ -26,31 +24,12 @@ import java.util.List;
 public class HBaseUtil {
 	
 	private static final Logger logger = LoggerFactory.getLogger(HBaseUtil.class);
-//	private static final String ZK_HOST=ConfigurationManager.getProperty("zk.ip");
-//	private static final String ZK_PORT=ConfigurationManager.getProperty("zk.port");
 	private static Configuration conf;
 	private static Connection conn;
-
-//	static {
-//		try {
-//			if (conf == null) {
-//			    conf = HBaseConfiguration.create();
-////                conf.set("hbase.zookeeper.property.clientPort", ConfigUtil.getInstance().getConfigVal("zkport", ConstantProperties.COMMON_PROP));
-//                conf.set("hbase.zookeeper.quorum", ConfigUtil.getInstance().getConfigVal("zkhost", ConstantProperties.COMMON_PROP));
-//                conf.set("zookeeper.znode.parent", "/hbase");
-//			}
-//		} catch (Exception e) {
-//			logger.error("HBase Configuration Initialization failure !");
-//			throw new RuntimeException(e) ;
-//		}
-//	}
-
 	public static void init(String zkHost){
 		try {
 			if (conf == null) {
 				conf = HBaseConfiguration.create();
-//				conf.set("hbase.zookeeper.quorum", ZK_HOST);
-//				conf.set("hbase.zookeeper.property.clientPort", ZK_PORT);
 			}
 		} catch (Exception e) {
 			logger.error("HBase Configuration Initialization failure !");
@@ -67,12 +46,144 @@ public class HBaseUtil {
             if(conn == null || conn.isClosed()){
                 conn = ConnectionFactory.createConnection(conf);
             }
-//         System.out.println("---------- " + conn.hashCode());
 		} catch (IOException e) {
 			logger.error("HBase 建立链接失败 ", e);
 		}
 		return conn;
 
+	}
+
+	public static void createTableSplit(String tableName, int regions, String... columnFamily) throws Exception{
+		/**
+		　　* @Description: TODO 创建预分区表 设置版本数1,设置SNAPPY压缩
+		　　* @param [tableName, regions, columnFamily]
+		　　* @return void
+		　　* @throws
+		　　* @author lenovo
+		　　* @date 2019/1/17 17:26
+		　　*/
+		Admin admin=null;
+		try {
+			admin= getConnection().getAdmin();
+			if (admin.tableExists(TableName.valueOf(tableName))) {
+				logger.warn("Table: {} is exists!", tableName);
+				return;
+			}
+			HTableDescriptor htd = new HTableDescriptor(TableName.valueOf(tableName));
+			for(String cf: columnFamily){
+				HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(cf);
+				hColumnDescriptor.setMaxVersions(1);
+				hColumnDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
+				htd.addFamily(hColumnDescriptor);
+			}
+			admin.createTable(htd, genSplitKeys(regions));
+		} finally {
+			if(admin!=null){
+				admin.close();
+			}
+			closeConnect(conn);
+		}
+
+	}
+
+	private static void createTable(String tableName, String[] cfs, byte[][] splitKeys) throws Exception {
+		/**
+		　　* @Description: TODO 创建预分区表 设置最大版本数1,SNAPPY压缩
+		　　* @param [tableName, cfs, splitKeys]
+		　　* @return void
+		　　* @throws
+		　　* @author lenovo
+		　　* @date 2019/1/18 10:08
+		　　*/
+		Connection conn = getConnection();
+		HBaseAdmin admin = (HBaseAdmin) conn.getAdmin();
+		try {
+			if (admin.tableExists(tableName)) {
+				logger.warn("Table: {} is exists!", tableName);
+				return;
+			}
+			HTableDescriptor tableDesc = new HTableDescriptor(TableName.valueOf(tableName));
+			for (int i = 0; i < cfs.length; i++) {
+				HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(cfs[i]);
+				hColumnDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
+				hColumnDescriptor.setMaxVersions(1);
+				tableDesc.addFamily(hColumnDescriptor);
+			}
+			admin.createTable(tableDesc, splitKeys);
+			logger.info("Table: {} create success!", tableName);
+		} finally {
+			admin.close();
+			closeConnect(conn);
+		}
+	}
+
+
+
+	private static byte[][] genSplitKeys(int regions){
+		/**
+		　　* @Description: TODO 按分区数获取splitkey
+		　　* @param [regions]
+		　　* @return byte[][]
+		　　* @throws
+		　　* @author lenovo
+		　　* @date 2019/1/17 14:31
+		　　*/
+		//定义一个存放分区键的数组
+		String[] keys = new String[regions];
+		//目前推算，region个数不会超过2位数，所以region分区键格式化为两位数字所代表的字符串
+		DecimalFormat df = new DecimalFormat("00");
+		for(int i = 0; i < regions; i ++){
+			keys[i] = df.format(i) + "|";
+		}
+
+		byte[][] splitKeys = new byte[regions][];
+		//生成byte[][]类型的分区键的时候，一定要保证分区键是有序的
+		TreeSet<byte[]> treeSet = new TreeSet<>(Bytes.BYTES_COMPARATOR);
+		for(int i = 0; i < regions; i++){
+			treeSet.add(Bytes.toBytes(keys[i]));
+		}
+
+		Iterator<byte[]> splitKeysIterator = treeSet.iterator();
+		int index = 0;
+		while(splitKeysIterator.hasNext()){
+			byte[] b = splitKeysIterator.next();
+			splitKeys[index ++] = b;
+		}
+		return splitKeys;
+	}
+
+	public static String getVisitRowKey(String regionCode,String timeStr,String guid,String offlineTime){
+		/**
+		 　　* @Description: TODO 获取访问日志的RowKey(分区号+时间戳+guid+offline_time)
+		 　　* @param [regionCode, timeStr, index]
+		 　　* @return java.lang.String
+		 　　* @throws
+		 　　* @author lenovo
+		 　　* @date 2019/1/15 13:09
+		 　　*/
+		StringBuilder sb = new StringBuilder();
+		sb.append(regionCode + "_")
+				.append(timeStr+"_")
+				.append(guid+"_")
+				.append(offlineTime);
+		return sb.toString();
+	}
+
+
+	public static String getPartitonCode(String buildTime ,int regions){
+		/**
+		　　* @Description: TODO 按天hash取模
+		　　* @param [buildTime, regions]
+		　　* @return java.lang.String
+		　　* @throws
+		　　* @author lenovo
+		　　* @date 2019/1/17 14:43
+		　　*/
+		//201901151607
+		String substring = buildTime.substring(0, 8);
+		int partitionCode = Math.abs(substring.hashCode() % regions);
+		DecimalFormat df = new DecimalFormat("00");
+		return  df.format(partitionCode);
 	}
 
 	/**
@@ -102,35 +213,8 @@ public class HBaseUtil {
 		}
 		createTable(tableName, new String[] { "events" }, splitKeys);
 	}
-	
-	/**
-	 * 建表
-	 * @param tableName
-	 * @param cfs
-	 * @throws IOException
-	 */
-	private static void createTable(String tableName, String[] cfs, byte[][] splitKeys) throws Exception {
-		Connection conn = getConnection();
-		HBaseAdmin admin = (HBaseAdmin) conn.getAdmin();
-		try {
-			if (admin.tableExists(tableName)) {
-				logger.warn("Table: {} is exists!", tableName);
-				return;
-			}
-			HTableDescriptor tableDesc = new HTableDescriptor(TableName.valueOf(tableName));
-			for (int i = 0; i < cfs.length; i++) {
-				HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(cfs[i]);
-				hColumnDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
-				hColumnDescriptor.setMaxVersions(1);
-				tableDesc.addFamily(hColumnDescriptor);
-			}
-			admin.createTable(tableDesc, splitKeys);
-			logger.info("Table: {} create success!", tableName);
-		} finally {
-			admin.close();
-			closeConnect(conn);
-		}
-	}
+
+
 
 	/**
 	 * 建表
