@@ -11,8 +11,8 @@ object DateScalaUtil {
   private val fastDateFormat: FastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss")
   private val fastDateFormat1: FastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd")
   private val fastDateFormat2: FastDateFormat = FastDateFormat.getInstance("yy-MM-dd")
-  private val fastDateFormat3: FastDateFormat = FastDateFormat.getInstance("yyMMddHHmmss")
-  private val fastDateFormat4: FastDateFormat = FastDateFormat.getInstance("yyMMdd")
+  private val fastDateFormat3: FastDateFormat = FastDateFormat.getInstance("yyyyMMddHHmmss")
+  private val fastDateFormat4: FastDateFormat = FastDateFormat.getInstance("yyyyMMdd")
   //时间戳格式化toString
   def tranTimeToString(dateLong:String,flag:Int) :String={
     flag match {

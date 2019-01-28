@@ -688,6 +688,28 @@ public class HBaseUtil {
 		return results;
 	}
 
+	public static ResultScanner getResultByStartEnd(String tableName,String start,String end){
+		Table table = getTable(tableName);
+		ResultScanner results = null;
+		if (table != null) {
+			try {
+				Scan scan = new Scan();
+				scan.setCaching(1000);
+				scan.setStartRow(Bytes.toBytes(start));
+				scan.setStopRow(Bytes.toBytes(end));
+				results = table.getScanner(scan);
+			} catch (IOException e) {
+				logger.error("getResultScanner failure !", e);
+			} finally {
+				try {
+					table.close();
+				} catch (IOException e) {
+					logger.error("table.close() failure !", e);
+				}
+			}
+		}
+		return results;
+	}
 	/**
 	 * 扫描整张表，注意使用完要释放。
 	 * @param tablename
