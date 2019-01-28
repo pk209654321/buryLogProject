@@ -1,5 +1,6 @@
 package testBury
 
+import java.util
 import java.util.Date
 
 import com.alibaba.fastjson.JSON
@@ -12,6 +13,9 @@ import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
 import sparkAction.{BuryLogin, BuryMainFunction}
 import sparkAction.BuryMainFunction.cleanCommonFunction
 import sparkAction.mapIpAction.BuryClientWebTableMapIp
+import sparkAction.mapIpActionList.BuryPhoneWebTableMapIpList
+
+import scala.collection.mutable
 
 /**
   * ClassName TempRunBury
@@ -21,6 +25,54 @@ import sparkAction.mapIpAction.BuryClientWebTableMapIp
   **/
 object TempRunBury {
 
+  //判断当前的日志是否为新版本获得老版本的日志
+  val oldVersionFunction= (list:util.List[BuryLogin])=>{
+    val line = list.get(0).line
+    val strings = line.split("\\|")
+    val i = strings(0).indexOf("=")
+    i>=0
+  }
+  val newVersionFunction=(list:util.List[BuryLogin])=>{
+    val line = list.get(0).line
+    val strings = line.split("\\|")
+    val i = strings(0).indexOf("=")
+    i<0
+  }
+
+  val cleanCommonFunctionTestList: String => util.List[BuryLogin] = (line: String) => {
+    val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
+    val jsonAndIp: Array[String] = all.split("&")
+    var listbury:java.util.List[BuryLogin]=new util.ArrayList[BuryLogin]()
+    if (jsonAndIp.length >= 2) {
+      //如果有ip和 httpurl 代'&'的埋点类容
+      val ifList = all.indexOf("[")//判断是否是打包上传
+      var bury=""
+      val i = all.lastIndexOf("&")
+      val ipTemp = all.substring(i + 1, all.length)
+      if(ifList==0){ //如果==0 是打包上传传递的是jsonList格式的日志
+        bury = all.substring(0, i)
+      }else{
+        bury = "["+all.substring(0, i)+"]"
+      }
+      try {
+        listbury = JSON.parseArray(bury, classOf[BuryLogin])
+      } catch {
+        case e:Throwable => println(s"error_log:${all}")
+      }
+      for(i <- (0 to listbury.size()-1)){
+        val login = listbury.get(i)
+        login.ipStr=ipTemp
+      }
+      listbury
+    } else {
+      try {
+        JSON.parseArray("["+all+"]", classOf[BuryLogin])
+      } catch {
+        case e:Throwable => MailUtil.sendMail("spark日志清洗调度","发现错误日志:"+all);listbury
+      }
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
     //获取当前类的名称
@@ -28,7 +80,7 @@ object TempRunBury {
     var sparkConf: SparkConf = new SparkConf().setAppName(s"${className}")
     if (local) {
       System.setProperty("HADOOP_USER_NAME", "wangyd")
-      sparkConf = sparkConf.setMaster("local[1]")
+      sparkConf = sparkConf.setMaster("local[2]")
     }
     val sc: SparkContext = new SparkContext(sparkConf)
     sc.setLogLevel("WARN")
@@ -40,22 +92,13 @@ object TempRunBury {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
-    val unit = filterBlank.map(BuryMainFunction.cleanCommonFunction)
-    val filterAction: RDD[BuryLogin] = unit.filter(_.logType == 2) //过滤出行为日志Data
-    val filterWeb: RDD[BuryLogin] = filterAction.filter(line => {
-      val source: Int = line.source
-      if (source == 3) {
-        //过滤出网页端数据k
-        true
-      } else {
-        false
-      }
+    val unit: RDD[util.List[BuryLogin]] = filterBlank.map(cleanCommonFunctionTestList)
+    val filterAction: RDD[util.List[BuryLogin]] = unit.filter(_.get(0).logType==2).filter(oldVersionFunction) //过滤出行为日志Data
+    val webRddList: RDD[util.List[BuryLogin]] = filterAction.filter(line => {
+      val login = line.get(0)
+      login.source == 3
     })
-    BuryClientWebTableMapIp.cleanClientWebData(filterWeb, hc, 0)
 
-
-
-
-
+    BuryPhoneWebTableMapIpList.cleanPhoneWebData(webRddList,hc,0)
   }
 }

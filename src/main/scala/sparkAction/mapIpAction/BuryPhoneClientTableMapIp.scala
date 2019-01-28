@@ -1,5 +1,7 @@
 package sparkAction.mapIpAction
 
+import java.util
+
 import bean.StockShopClient
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
@@ -17,7 +19,7 @@ import scala.collection.mutable
 object BuryPhoneClientTableMapIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTablePhoneClient")
 
-  def cleanPhoneClientData(filterClient: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) = {
+  def cleanPhoneClientData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int) = {
     /**
       * 　　* @Description: 清洗出手机客户端的数据insert到hive仓库中
       * 　　* @param [filterClient, hc, dayFlag]
@@ -26,17 +28,21 @@ object BuryPhoneClientTableMapIp {
       * 　　* @author lenovo
       * 　　* @date 2018/12/4 17:48
       * 　　*/
-    val map: RDD[Row] = filterClient.map(one => {
-      val line = one.line//埋点数据
-      val ipStr = one.ipStr//真实ip
+    val rddOne = filterData.flatMap(_.toArray())
+    val map: RDD[Row] = rddOne.map(one => {
+      val login = one.asInstanceOf[BuryLogin]
+      val line = login.line
+      //埋点数据
+      val ipStr = login.ipStr
+      //真实ip
       val split = line.split("\\|")
       val hashMap: mutable.Map[String, String] = new mutable.HashMap[String, String]()
       split.foreach(l => {
         val i = l.indexOf("=")
         if (i > 0) {
           //如果长度为2
-          val strfirst = l.substring(0,i)
-          val strSecond = l.substring(i+1,l.length)
+          val strfirst = l.substring(0, i)
+          val strSecond = l.substring(i + 1, l.length)
           val trimKey: String = strfirst.trim
           val trimVal: String = strSecond.trim
           hashMap += ((trimKey, trimVal))

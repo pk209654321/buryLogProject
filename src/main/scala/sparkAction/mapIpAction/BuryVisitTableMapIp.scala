@@ -1,5 +1,7 @@
 package sparkAction.mapIpAction
 
+import java.util
+
 import bean.StockShopVisit
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
@@ -16,20 +18,21 @@ import scala.collection.mutable
 object BuryVisitTableMapIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableVisit")
 
-  def cleanVisitData(filterVisit: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
+  def cleanVisitData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int): Unit = {
     /**
-    　　* @Description: 清洗出股掌柜访问日志insert到hive仓库中
-    　　* @param [filterVisit, hc, diffDay]
-    　　* @return void
-    　　* @throws
-    　　* @author lenovo
-    　　* @date 2018/12/4 17:49
-    　　*/
-    //import hc.implicits._
-    val visitRow: RDD[Row] = filterVisit.map(line => {
-      val ipStr: String = line.ipStr
+    *　　* @Description: 清洗出股掌柜访问日志insert到hive仓库中
+    *　　* @param [filterVisit, hc, diffDay]
+    *　　* @return void
+    *　　* @throws
+    *　　* @author lenovo
+    *　　* @date 2018/12/4 17:49
+      * 　　*/
+    val rddOne = filterData.flatMap(_.toArray())
+    val visitRow: RDD[Row] = rddOne.map(one => {
+      val login = one.asInstanceOf[BuryLogin]
+      val ipStr: String = login.ipStr
       //获取外网ip
-      val all: String = line.line
+      val all: String = login.line
       val split: Array[String] = all.split("\\|")
       val hashMap = new mutable.HashMap[String, String]()
       split.foreach(l => {

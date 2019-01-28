@@ -18,7 +18,7 @@ object KafkaDirectWordCount {
   def main(args: Array[String]): Unit = {
 
     val group = "g001"
-    val conf = new SparkConf().setAppName("KafkaDirectWordCount").setMaster("local[2]")
+    val conf = new SparkConf().setAppName(s"").setMaster("local[2]")
     val ssc = new StreamingContext(conf, Duration(5000))
     val topic = "first"
     val brokerList = "leader:9092"
