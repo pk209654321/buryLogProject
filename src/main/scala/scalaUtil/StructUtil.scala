@@ -101,4 +101,6 @@ object StructUtil {
     StructField("sip",StringType),
     StructField("other_map",MapType(StringType,StringType))
   ))
+  //string_ip类型划分
+  val structCommonStringIp=StructType(List(StructField("log_str",StringType),StructField("sip",StringType)))
 }

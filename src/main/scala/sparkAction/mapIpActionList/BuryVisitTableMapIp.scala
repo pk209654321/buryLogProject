@@ -1,4 +1,4 @@
-package sparkAction.mapIpAction
+package sparkAction.mapIpActionList
 
 import java.util
 
@@ -18,7 +18,7 @@ import scala.collection.mutable
 object BuryVisitTableMapIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableVisit")
 
-  def cleanVisitData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int): Unit = {
+  def cleanVisitData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
     /**
     *　　* @Description: 清洗出股掌柜访问日志insert到hive仓库中
     *　　* @param [filterVisit, hc, diffDay]
@@ -27,12 +27,9 @@ object BuryVisitTableMapIp {
     *　　* @author lenovo
     *　　* @date 2018/12/4 17:49
       * 　　*/
-    val rddOne = filterData.flatMap(_.toArray())
-    val visitRow: RDD[Row] = rddOne.map(one => {
-      val login = one.asInstanceOf[BuryLogin]
-      val ipStr: String = login.ipStr
-      //获取外网ip
-      val all: String = login.line
+    val visitRow: RDD[Row] = filterData.map(one => {
+      val ipStr: String = one.ipStr
+      val all: String = one.line
       val split: Array[String] = all.split("\\|")
       val hashMap = new mutable.HashMap[String, String]()
       split.foreach(l => {

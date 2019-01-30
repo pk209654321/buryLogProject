@@ -27,7 +27,7 @@ object KafkaWordCount2 {
 
   def main(args: Array[String]): Unit = {
 
-    val className = this.getClass.getSimpleName
+   /* val className = this.getClass.getSimpleName
 
     val conf = new SparkConf().setAppName(s"$className").setMaster("local[*]")
     val sc = new SparkContext(conf)
@@ -85,7 +85,7 @@ object KafkaWordCount2 {
       })
     })
     ssc.start()
-    ssc.awaitTermination()
+    ssc.awaitTermination()*/
   }
 
   //找出guid,offline_time,access_time 值

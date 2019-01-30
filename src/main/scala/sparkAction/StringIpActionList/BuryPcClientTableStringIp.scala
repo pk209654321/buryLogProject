@@ -1,8 +1,7 @@
-package sparkAction.mapIpAction
+package sparkAction.StringIpActionList
 
 import java.util
 
-import bean.StockShopClient
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
@@ -16,8 +15,8 @@ import scala.collection.mutable
   * Created by lenovo on 2018/11/16.
   *
   */
-object BuryPcClientTableMapIp {
-  private val TABLE: String = ConfigurationManager.getProperty("actionTablePcClient")
+object BuryPcClientTableStringIp {
+  private val TABLE: String = ConfigurationManager.getProperty("actionTablePcClientAll")
 
   def cleanPcClientData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int) = {
     /**
@@ -32,29 +31,14 @@ object BuryPcClientTableMapIp {
     val map: RDD[Row] = rddOne.map(one => {
       val login = one.asInstanceOf[BuryLogin]
       val line = login.line
-      //埋点数据
       val ipStr = login.ipStr
-      //真实ip
-      val split = line.split("\\|")
-      val hashMap: mutable.Map[String, String] = new mutable.HashMap[String, String]()
-      split.foreach(l => {
-        val i = l.indexOf("=")
-        if (i > 0) {
-          //如果长度为2
-          val strfirst = l.substring(0, i)
-          val strSecond = l.substring(i + 1, l.length)
-          val trimKey: String = strfirst.trim
-          val trimVal: String = strSecond.trim
-          hashMap += ((trimKey, trimVal))
-        }
-      })
-      Row(hashMap, ipStr)
+      Row(line, ipStr)
     })
 
     val createDataFrame: DataFrame = hc.createDataFrame(map, StructUtil.structCommonMapIp)
-    createDataFrame.registerTempTable("StockShopPcClientMapIp")
+    createDataFrame.registerTempTable("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPcClientMapIp"
+    val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable"
     hc.sql(hql)
 
   }

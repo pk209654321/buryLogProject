@@ -5,6 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.{DataFrame, Row}
 import scalaUtil.{DateScalaUtil, StructUtil}
+import sparkAction.buryCleanUtil.BuryCleanCommon
 import sparkAction.{BuryLogin, BuryMainFunction}
 
 import scala.collection.mutable
@@ -36,7 +37,7 @@ object BuryClientWebTableStringIpMap {
           val strSecond = l.substring(i+1,l.length)
           val trimKey: String = strfirst.trim
           val trimVal: String = strSecond.trim
-          val bool = BuryMainFunction.selectStockField(dict,trimKey)
+          val bool = BuryCleanCommon.selectStockField(dict,trimKey)
           if(!bool){
             hashMap+=((trimKey,trimVal))
           }

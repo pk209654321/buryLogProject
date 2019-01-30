@@ -32,9 +32,9 @@ object LocalScala {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
-    val value= filterBlank.map(BuryMainFunction.cleanCommonFunction)
+   /* val value= filterBlank.map(BuryMainFunction.cleanCommonFunction)
     //输出路径
-    value.saveAsTextFile(args(1))
+    value.saveAsTextFile(args(1))*/
   }
 
 }

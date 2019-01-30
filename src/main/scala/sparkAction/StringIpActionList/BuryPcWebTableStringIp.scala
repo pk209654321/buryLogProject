@@ -1,4 +1,4 @@
-package sparkAction.mapIpAction
+package sparkAction.StringIpActionList
 
 import java.util
 
@@ -16,8 +16,8 @@ import scala.collection.mutable
   * Created by lenovo on 2018/11/16.
   *
   */
-object BuryPcWebTableMapIp {
-  private val TABLE: String = ConfigurationManager.getProperty("actionTablePcWeb")
+object BuryPcWebTableStringIp {
+  private val TABLE: String = ConfigurationManager.getProperty("actionTablePcWebAll")
 
   def cleanPcWebData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int) = {
     /**
@@ -31,30 +31,16 @@ object BuryPcWebTableMapIp {
     val rddOne: RDD[AnyRef] = filterData.flatMap(_.toArray())
     val value = rddOne.map(one => {
       val login = one.asInstanceOf[BuryLogin]
-      val line = login.line
       //埋点数据
-      val ipStr = login.ipStr
+      val line = login.line
       //真实ip
-      val split = line.split("\\|")
-      val client: StockShopClient = new StockShopClient
-      val hashMap: mutable.Map[String, String] = new mutable.HashMap[String, String]()
-      split.foreach(l => {
-        val i = l.indexOf("=")
-        if (i > 0) {
-          //如果长度为2
-          val strfirst = l.substring(0, i)
-          val strSecond = l.substring(i + 1, l.length)
-          val trimKey: String = strfirst.trim
-          val trimVal: String = strSecond.trim
-          hashMap += ((trimKey, trimVal))
-        }
-      })
-      Row(hashMap, ipStr)
+      val ipStr = login.ipStr
+      Row(line, ipStr)
     })
-    val createDataFrame: DataFrame = hc.createDataFrame(value, StructUtil.structCommonMapIp)
-    createDataFrame.registerTempTable("StockShopPcWebMapIp")
+    val createDataFrame: DataFrame = hc.createDataFrame(value, StructUtil.structCommonStringIpMap)
+    createDataFrame.registerTempTable("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPcWebMapIp"
+    val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable"
     hc.sql(hql)
 
   }

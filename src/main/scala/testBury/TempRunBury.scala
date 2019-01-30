@@ -11,9 +11,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
 import sparkAction.{BuryLogin, BuryMainFunction}
-import sparkAction.BuryMainFunction.cleanCommonFunction
-import sparkAction.mapIpAction.BuryClientWebTableMapIp
-import sparkAction.mapIpActionList.BuryPhoneWebTableMapIpList
+import sparkAction.mapIpActionList.BuryClientWebTableMapIp
+import sparkAction.mapIpActionListTest.BuryPhoneWebTableMapIpList
 
 import scala.collection.mutable
 
