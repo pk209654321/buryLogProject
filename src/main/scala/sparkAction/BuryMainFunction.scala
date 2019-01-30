@@ -36,7 +36,7 @@ object BuryMainFunction {
       val hc: HiveContext = new HiveContext(sc)
       //for (dayFlag <- (diffDay to -1)) { //按天数循环
         //val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(dayFlag, 2)
-        val realPath="E:\\desk\\新版本日志\\access.log"
+        val realPath="E:\\desk\\新版本日志\\新建文件夹\\access.log"
         val file: RDD[String] = sc.textFile(realPath, 1)
         //val dictRdd = sc.textFile(dict).collect()
         //val dictBrod = sc.broadcast(dictRdd).value
