@@ -1,4 +1,4 @@
-package sparkAction.StringIpActionList
+package sparkAction.StringIpActionListHive
 
 import java.util
 
@@ -17,7 +17,7 @@ import scala.collection.mutable
 object BuryVisitTableStringIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableVisitAll")
 
-  def cleanVisitData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int): Unit = {
+  def cleanVisitData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
     /**
     *　　* @Description: 清洗出股掌柜访问日志insert到hive仓库中
     *　　* @param [filterVisit, hc, diffDay]
@@ -26,14 +26,12 @@ object BuryVisitTableStringIp {
     *　　* @author lenovo
     *　　* @date 2018/12/4 17:49
       * 　　*/
-    val rddOne = filterData.flatMap(_.toArray())
-    val visitRow: RDD[Row] = rddOne.map(one => {
-      val login = one.asInstanceOf[BuryLogin]
-      val ipStr: String = login.ipStr
-      val all: String = login.line
+    val visitRow: RDD[Row] = filterData.map(one => {
+      val ipStr: String = one.ipStr
+      val all: String = one.line
       Row(all,ipStr)
     })
-    val frame: DataFrame = hc.createDataFrame(visitRow,StructUtil.structCommonStringIpMap)
+    val frame: DataFrame = hc.createDataFrame(visitRow,StructUtil.structCommonStringIp)
     frame.registerTempTable("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
     hc.sql(s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")

@@ -103,4 +103,6 @@ object StructUtil {
   ))
   //string_ip类型划分
   val structCommonStringIp=StructType(List(StructField("log_str",StringType),StructField("sip",StringType)))
+  //portfolio类型划分
+  val structPortfolio=StructType(List(StructField("sKey",StringType),StructField("sValue",StringType),StructField("updatetime",StringType)))
 }

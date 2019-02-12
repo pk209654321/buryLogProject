@@ -1,4 +1,4 @@
-package sparkAction.StringIpActionList
+package sparkAction.StringIpActionListHive
 
 import java.util
 
@@ -18,16 +18,17 @@ import scala.collection.mutable
 object BuryPcClientTableStringIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTablePcClientAll")
 
+
   def cleanPcClientData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int) = {
     /**
-      * 　　* @Description: 清洗出 PC 客户端的数据insert到hive仓库中
-      * 　　* @param [filterClient, hc, dayFlag]
-      * 　　* @return org.apache.spark.sql.DataFrame
-      * 　　* @throws
-      * 　　* @author lenovo
-      * 　　* @date 2018/12/4 17:48
-      * 　　*/
-      val rddOne = filterData.flatMap(_.toArray())
+    　　* @Description: TODO 清洗出客户端日志
+    　　* @param [filterData, hc, dayFlag]
+    　　* @return org.apache.spark.sql.DataFrame
+    　　* @throws
+    　　* @author lenovo
+    　　* @date 2019/2/12 13:44
+    　　*/
+    val rddOne = filterData.flatMap(_.toArray())
     val map: RDD[Row] = rddOne.map(one => {
       val login = one.asInstanceOf[BuryLogin]
       val line = login.line

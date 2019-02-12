@@ -14,19 +14,22 @@ import sparkAction.BuryLogin
   */
 object BuryLoginReportNew {
   private val httpUrl: String = ConfigurationManager.getProperty("http.url")
-  def repotUserLogin(accessData: RDD[BuryLogin]): Unit ={
+
+  def repotUserLogin(accessData: RDD[BuryLogin]): Unit = {
     /**
-    　　* @Description: 用户登录上报(http端口)
-    　　* @param [accessData]
-    　　* @return void
-    　　* @throws
-    　　* @author lenovo
-    　　* @date 2018/12/4 17:47
-    　　*/
-    val userTimeRdd: RDD[(String, String)] = accessData.map(one => {
+      * 　　* @Description: 用户登录上报(http端口)
+      * 　　* @param [accessData]
+      * 　　* @return void
+      * 　　* @throws
+      * 　　* @author lenovo
+      * 　　* @date 2018/12/4 17:47
+      * 　　*/
+
+    val userTimeRdd = accessData.map(one => {
       val line = one.line
       val strings: Array[String] = line.split("\\|")
-      val tempObject = new TempObject("", "");
+      var user_id=""
+      var access_time=""
       for (elem <- strings) {
         var trimKey = ""
         var trimValue = ""
@@ -38,25 +41,27 @@ object BuryLoginReportNew {
           }
         }
         trimKey match {
-          case "user_id" => tempObject.user_id = trimValue
-          case "access_time" => tempObject.access_time = trimValue
+          case "user_id" => user_id = trimValue
+          case "access_time" => access_time = trimValue
           case _ =>
         }
       }
-      (tempObject.user_id, tempObject.access_time)
+      (user_id, List(access_time))
     })
 
     //过滤掉user_id是0的,去重
     val disRdd = userTimeRdd.filter(line => {
       val user_id = line._1
-      val access_time = line._2
+      val access_time = line._2.head
       StringUtils.isNotBlank(user_id) && StringUtils.isNotBlank(access_time) && user_id != "0"
-    }).distinct()
-    disRdd.foreach(line => {
-      try {
-        val random = new Random()
-        var user_id = line._1
-        val access_time = line._2
+  }).distinct()
+    //聚合
+    val userIdTimeList = disRdd.reduceByKey(_ ::: _)
+    //取每个user_id的前一百条
+    userIdTimeList.foreach(line => {
+      val user_id = line._1
+      line._2.sorted.take(100).foreach(access_time => {
+        try {
         val time_login: String = DateScalaUtil.tranTimeToString(access_time, 0)
         val data: Data = new Data()
         data.setTime_login(time_login)
@@ -65,55 +70,62 @@ object BuryLoginReportNew {
         userStr.setUserId(user_id.toInt)
         userStr.setData(data)
         HttpPostUtil.sendMessage(userStr, httpUrl)
-      } catch {
-        case e => e.printStackTrace()
-      }
+        } catch {
+          case e:Throwable => e.printStackTrace()
+        }
+      })
     })
   }
 
-  def repotUserLoginNew(accessData: RDD[BuryLogin]): Unit ={
+  def repotUserLoginNew(accessData: RDD[BuryLogin]): Unit = {
     /**
-    　　* @Description: 用户登录上报(http端口)
-    　　* @param [accessData]
-    　　* @return void
-    　　* @throws
-    　　* @author lenovo
-    　　* @date 2018/12/4 17:47
-    　　*/
-    val userTimeRdd: RDD[(String, String)] = accessData.map(one => {
+      * 　　* @Description: 用户登录上报(http端口)
+      * 　　* @param [accessData]
+      * 　　* @return void
+      * 　　* @throws
+      * 　　* @author lenovo
+      * 　　* @date 2018/12/4 17:47
+      * 　　*/
+    val userTimeRdd= accessData.map(one => {
       val line = one.line
       val strings: Array[String] = line.split("\\|")
-      val tempObject = new TempObject("", "");
-      val user_id = strings(0) //user_id 用户id
-      val access_time= strings(2) //access_time 用户登录时间
-      (user_id, access_time)
+      if (strings.length>=18){
+        val user_id = strings(0) //user_id 用户id
+        val access_time = strings(2) //access_time 用户登录时间
+        (user_id, List(access_time))
+      }else{
+        ("",List(""))
+      }
     })
-
     //过滤掉user_id是0的,去重
     val disRdd = userTimeRdd.filter(line => {
       val user_id = line._1
-      val access_time = line._2
+      val access_time = line._2.head
       StringUtils.isNotBlank(user_id) && StringUtils.isNotBlank(access_time) && user_id != "0"
     }).distinct()
-    disRdd.foreach(line => {
-      try {
-        var user_id = line._1
-        val access_time = line._2
-        val time_login: String = DateScalaUtil.tranTimeToString(access_time, 0)
-        val data: Data = new Data()
-        data.setTime_login(time_login)
-        val userStr: UserLoginStr = new UserLoginStr()
-        userStr.setType(3)
-        userStr.setUserId(user_id.toInt)
-        userStr.setData(data)
-        HttpPostUtil.sendMessage(userStr, httpUrl)
-      } catch {
-        case e => e.printStackTrace()
-      }
+    //聚合
+    val userIdTimeList = disRdd.reduceByKey(_:::_)
+    userIdTimeList.foreach(line=> {
+      val user_id = line._1
+      val time_list = line._2
+      time_list.sorted.take(100).foreach(access_time => {
+        try {
+          val time_login: String = DateScalaUtil.tranTimeToString(access_time, 0)
+          val data: Data = new Data()
+          data.setTime_login(time_login)
+          val userStr: UserLoginStr = new UserLoginStr()
+          userStr.setType(3)
+          userStr.setUserId(user_id.toInt)
+          userStr.setData(data)
+          HttpPostUtil.sendMessage(userStr, httpUrl)
+        } catch {
+          case e:Throwable => e.printStackTrace()
+        }
+      })
     })
   }
 
 
 }
 
-case class TempObject(var user_id:String,var access_time:String)
+case class TempObject(var user_id: String, var access_time: String)

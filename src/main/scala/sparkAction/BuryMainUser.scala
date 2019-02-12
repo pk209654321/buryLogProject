@@ -13,7 +13,7 @@ import sparkAction.mapAction.BuryLoginReportNew
 
 /**
   * Created by lenovo on 2018/11/16.
-  * 将埋点数据清洗,形成两张表
+  * 用户登录上报入口程序
   */
 object BuryMainUser {
   private val hdfsPath: String = ConfigurationManager.getProperty("hdfs.log")
@@ -30,8 +30,8 @@ object BuryMainUser {
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
       val hc: HiveContext = new HiveContext(sc)
-      val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
-      //val realPath = hdfsPath
+      //val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
+      val realPath = "E:\\desk\\新版本日志"
       val file: RDD[String] = sc.textFile(realPath, 1)
       val filterBlank: RDD[String] = file.filter(line => {
         StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
@@ -44,9 +44,9 @@ object BuryMainUser {
       val oldDataOneRdd: RDD[BuryLogin] = filterVisit.filter(BuryCleanCommon.getOldVersionFunction)
       val newDataOneRdd = filterVisit.filter(BuryCleanCommon.getNewVersionFunction)
       //旧版本数据用户启动上报
-      BuryLoginReportNew.repotUserLogin(oldDataOneRdd)
+      //BuryLoginReportNew.repotUserLogin(oldDataOneRdd)
       //新版本数据
-      //BuryLoginReportNew.repotUserLoginNew(newDataOneRdd)
+      BuryLoginReportNew.repotUserLoginNew(newDataOneRdd)
       sc.stop()
     } catch {
       case e: Throwable => MailUtil.sendMail("spark用户登录上报", "用户登录上报错误")

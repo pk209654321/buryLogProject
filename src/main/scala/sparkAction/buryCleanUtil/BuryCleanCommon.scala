@@ -30,13 +30,14 @@ object BuryCleanCommon {
   }
 
   //获取老版本的日志
-  val getOldVersionFunction = (one:BuryLogin) => {
+  val getOldVersionFunction = (one: BuryLogin) => {
     val line = one.line
     val strings = line.split("\\|")
     val i = strings(0).indexOf("=")
     i >= 0
   }
-  val getNewVersionFunction = (one:BuryLogin) => {
+  //获取新版日志
+  val getNewVersionFunction = (one: BuryLogin) => {
     val line = one.line
     val strings = line.split("\\|")
     val i = strings(0).indexOf("=")
@@ -63,8 +64,10 @@ object BuryCleanCommon {
       false
     }
   }
+
+
   //获取客户端行为日志
-  val getPhoneClientActionLog=(one: BuryLogin)=>{
+  val getPhoneClientActionLog = (one: BuryLogin) => {
     val source: Int = one.source
     if (source == 1 || source == 2) {
       //安卓和ios端
@@ -94,9 +97,9 @@ object BuryCleanCommon {
       try {
         listbury = JSON.parseArray(bury, classOf[BuryLogin])
       } catch {
-        case e: Throwable => println(s"error_log:${all}")
+        case e: Throwable => println(s"error_log----------------------${all}")
       }
-      for (i <- (0 to listbury.size() - 1)) {
+      for (i <- (0 until listbury.size())) {
         val login = listbury.get(i)
         login.ipStr = ipTemp
       }
@@ -105,7 +108,7 @@ object BuryCleanCommon {
       try {
         JSON.parseArray("[" + all + "]", classOf[BuryLogin])
       } catch {
-        case e: Throwable => MailUtil.sendMail("spark日志清洗调度", "发现错误日志:" + all); listbury
+        case e: Throwable => println(s"error_log-----------------------${all}"); listbury
       }
     }
   }

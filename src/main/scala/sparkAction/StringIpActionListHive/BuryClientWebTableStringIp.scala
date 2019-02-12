@@ -1,4 +1,4 @@
-package sparkAction.StringIpActionList
+package sparkAction.StringIpActionListHive
 
 import java.util
 
@@ -17,7 +17,7 @@ import scala.collection.mutable
 object BuryClientWebTableStringIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableClientWebAll")
 
-  def cleanClientWebData(filterData: RDD[util.List[BuryLogin]], hc: HiveContext, dayFlag: Int): Unit = {
+  def cleanClientWebData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
     /**
       * 　　* @Description: 清洗出手机客户端镶嵌WEB的数据
       * 　　* @param [filterWeb, hc, diffDay]
@@ -26,12 +26,11 @@ object BuryClientWebTableStringIp {
       * 　　* @author lenovo
       * 　　* @date 2018/12/4 17:45
       * 　　*/
-    val rddOne = filterData.flatMap(_.toArray())
-    val map: RDD[Row] = rddOne.map(one => {
-      val login = one.asInstanceOf[BuryLogin]
-      val all: String = login.line
-      val ipStr = login.ipStr
-      Row(all, ipStr)
+
+    val map: RDD[Row] = filterData.map(one => {
+      val all: String = one.line
+      val ipStr = one.ipStr
+      Row(all, ipStr,null)
     })
     val createDataFrame: DataFrame = hc.createDataFrame(map, StructUtil.structCommonStringIpMap)
     createDataFrame.registerTempTable("tempTable")

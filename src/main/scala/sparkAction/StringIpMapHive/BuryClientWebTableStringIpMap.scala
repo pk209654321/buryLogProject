@@ -1,4 +1,4 @@
-package sparkAction.StringIpMapAction
+package sparkAction.StringIpMapHive
 
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD

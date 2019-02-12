@@ -9,13 +9,15 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
-import sparkAction.StringIpMapAction.BuryClientWebTableStringIpMap
+import sparkAction.StringIpActionListHive.{BuryClientWebTableStringIp, BuryPhoneClientTableStringIp, BuryVisitTableStringIp}
+import sparkAction.StringIpMapHive.BuryClientWebTableStringIpMap
 import sparkAction.buryCleanUtil.BuryCleanCommon
 import sparkAction.mapIpActionList._
 
 /**
   * Created by lenovo on 2018/11/16.
-  * 将埋点数据清洗,形成两张表
+  * 该类是埋点日志清洗入库
+  * 主要有两版日志
   */
 object BuryMainFunction {
   private val hdfsPath: String = ConfigurationManager.getProperty("hdfs.log")
@@ -36,7 +38,7 @@ object BuryMainFunction {
       val hc: HiveContext = new HiveContext(sc)
       //for (dayFlag <- (diffDay to -1)) { //按天数循环
         //val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(dayFlag, 2)
-        val realPath="E:\\desk\\新版本日志\\新建文件夹\\access.log"
+        val realPath="E:\\desk\\新版本日志\\access.log"
         val file: RDD[String] = sc.textFile(realPath, 1)
         //val dictRdd = sc.textFile(dict).collect()
         //val dictBrod = sc.broadcast(dictRdd).value
@@ -49,10 +51,11 @@ object BuryMainFunction {
         val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
         val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).cache()
         val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
+
         //老规则数据清洗入库
-        oldVersionCleanInsert(oldDataOneRdd,hc,0)
+        //oldVersionCleanInsert(oldDataOneRdd,hc,0)
         //新规则数据+老规则数据清洗入库
-        //newVersionCleanInsert(allDataOneRdd,hc,dayFlag)
+        newVersionCleanInsert(allDataOneRdd,hc,0)
       //}
       sc.stop()
     } catch {
@@ -98,38 +101,46 @@ object BuryMainFunction {
 
   //新+旧(日志)一起清洗
   def newVersionCleanInsert(DataRddList: RDD[BuryLogin],hc: HiveContext,dayFlag:Int) = {
+    /**
+    　　* @Description: TODO 新+旧(日志)一起清洗
+    　　* @param [DataRddList, hc, dayFlag]
+    　　* @return void
+    　　* @throws
+    　　* @author lenovo
+    　　* @date 2019/2/12 13:37
+    　　*/
     //过滤出pc端web日志
-    val pcWebRdd = DataRddList.filter(BuryCleanCommon.getPcWebLog)
+    //val pcWebRdd = DataRddList.filter(BuryCleanCommon.getPcWebLog)
     //清洗出pc端web日志
-    BuryPcWebTableMapIp.cleanPcWebData(pcWebRdd, hc, dayFlag)
+    //BuryPcWebTableStringIp.cleanPcWebData(pcWebRdd, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     //过滤出手机web日志
-    val filterPhoneWeb = DataRddList.filter(BuryCleanCommon.getPhoneWebLog) //手机web
+    //val filterPhoneWeb = DataRddList.filter(BuryCleanCommon.getPhoneWebLog) //手机web
     //清洗出手机web端的日志
-    BuryPhoneWebTableMapIp.cleanPhoneWebData(filterPhoneWeb, hc, dayFlag)
+    //BuryPhoneWebTableStringIp.cleanPhoneWebData(filterPhoneWeb, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     val filterVisit = DataRddList.filter(_.logType == 1) //过滤出访问日志Data
     //清洗出股掌柜手机客户端访问日志数据
-    BuryVisitTableMapIp.cleanVisitData(filterVisit, hc, dayFlag)
+    BuryVisitTableStringIp.cleanVisitData(filterVisit, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     val filterAction = DataRddList.filter(_.logType == 2) //过滤出行为日志Data
     //过滤出客户端行为日志
     val filterClient = filterAction.filter(BuryCleanCommon.getPhoneClientActionLog)
     //清洗出股掌柜手机客户端行为数据
-    BuryPhoneClientTableMapIp.cleanPhoneClientData(filterClient, hc, dayFlag)
+    BuryPhoneClientTableStringIp.cleanPhoneClientData(filterClient, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
-    val pcClient = filterAction.filter(_.source == 4)
+    //val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
-    BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)
+    //BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
     //过滤出手机客户端内嵌网页端行为日志
-    val filterWeb = filterAction.filter(BuryCleanCommon.getPhoneClientActionLog)
+    val filterWeb = filterAction.filter(_.source==3)
     //清洗股掌柜手机客户端内嵌网页行为数据
-    BuryClientWebTableMapIp.cleanClientWebData(filterWeb, hc, dayFlag)
+    BuryClientWebTableStringIp.cleanClientWebData(filterWeb, hc, dayFlag)
   }
 }
 
