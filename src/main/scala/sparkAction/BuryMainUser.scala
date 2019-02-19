@@ -30,8 +30,8 @@ object BuryMainUser {
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
       val hc: HiveContext = new HiveContext(sc)
-      //val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
-      val realPath = "E:\\desk\\新版本日志"
+      val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
+      //val realPath = "E:\\desk\\新版本日志"
       val file: RDD[String] = sc.textFile(realPath, 1)
       val filterBlank: RDD[String] = file.filter(line => {
         StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
@@ -44,7 +44,7 @@ object BuryMainUser {
       val oldDataOneRdd: RDD[BuryLogin] = filterVisit.filter(BuryCleanCommon.getOldVersionFunction)
       val newDataOneRdd = filterVisit.filter(BuryCleanCommon.getNewVersionFunction)
       //旧版本数据用户启动上报
-      //BuryLoginReportNew.repotUserLogin(oldDataOneRdd)
+      BuryLoginReportNew.repotUserLogin(oldDataOneRdd)
       //新版本数据
       BuryLoginReportNew.repotUserLoginNew(newDataOneRdd)
       sc.stop()

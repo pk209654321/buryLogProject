@@ -17,7 +17,7 @@ object BuryCleanCommon {
   //查询股市app_web字段,将其他字段放入other_map中
   def selectStockField(dict: Array[String], key: String): Boolean = {
     if (StringUtils.isBlank(key)) {
-      return false
+      return true
     }
     var flag: Boolean = false
     for (elem <- dict if !flag) {

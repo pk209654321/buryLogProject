@@ -10,6 +10,8 @@ import org.json4s.jackson.Json
 import scalaUtil.{DateScalaUtil, HttpPostUtil}
 import scalikejdbc.{DB, NamedDB, SQL}
 import scalikejdbc.config.DBs
+import sparkAction.{Portfolio, PortfolioStr}
+import sparkAction.StringIpActionListHive.BuryClientWebTableStringIp.TABLE
 
 import scala.collection.mutable
 import scala.util.parsing.json
@@ -43,35 +45,76 @@ object TempTest {
   //   map.foreach(line => println("key:"+line._1+"                   value:"+line._2))
   //        //val i: Int =map.getOrElse("aaa",0)
   //  }
-//  def main(args: Array[String]): Unit = {
-//    val list1 = List("a", "b", "c")
-//    val list2 = List("d")
-//    val str1="a"
-//    val str2="b"
-//    str1::str2::Nil
-//    val strings = list1:::list2
-//    val listTwo = list1++list2
-//    println(listTwo.mkString(","))
-//  }
-//  def main(args: Array[String]): Unit = {
-//    val str="40890|45689d4a56574893b0a25ec97f177ade|1548770148|1548770238|TEST_1|2.4.0|Nexus 5|android|5.1|N/A|wifi|1080x1776|1776|1080|8C:3A:E3:96:60:65|359250050436862| |359250050436862|"
-//    val strings = str.split("\\|")
-//    val size = strings.size
-//    println(size)
-//    println(strings.length)
-//  }
+  //  def main(args: Array[String]): Unit = {
+  //    val list1 = List("a", "b", "c")
+  //    val list2 = List("d")
+  //    val str1="a"
+  //    val str2="b"
+  //    str1::str2::Nil
+  //    val strings = list1:::list2
+  //    val listTwo = list1++list2
+  //    println(listTwo.mkString(","))
+  //  }
+  //  def main(args: Array[String]): Unit = {
+  //    val str="40890|45689d4a56574893b0a25ec97f177ade|1548770148|1548770238|TEST_1|2.4.0|Nexus 5|android|5.1|N/A|wifi|1080x1776|1776|1080|8C:3A:E3:96:60:65|359250050436862| |359250050436862|"
+  //    val strings = str.split("\\|")
+  //    val size = strings.size
+  //    println(size)
+  //    println(strings.length)
+  //  }
+
+  //  def main(args: Array[String]): Unit = {
+  //    DBs.setupAll()
+  //    val peoples = NamedDB('mysql).readOnly { implicit session =>
+  //      SQL("select * from t_portfolio").map(rs => PortfolioBean(rs.string("sKey"),rs.bytes("sValue"),rs.string("updatetime"))).list().apply()
+  //    }
+  //    val portfolioStrs = peoples.map(one => {
+  //      val value = one.sValue
+  //      val stream = new BaseDecodeStream(value)
+  //      val list = new ProSecInfoList()
+  //      list.readFrom(stream)
+  //      println(JSON.toJSONString(list, SerializerFeature.WriteMapNullValue))
+  //      val sValue = JSON.toJSONString(list, SerializerFeature.WriteMapNullValue)
+  //      PortfolioStr(one.sKey, sValue, one.updatetime)
+  //    })
+  //    portfolioStrs
+  //  }
+
+  //  def main(args: Array[String]): Unit = {
+  //    var a="PROFOGUID:0db8a994caa52f868906ce5dae5cb403"
+  //    val i = a.indexOf(":")
+  //    val str = a.substring(i+1)
+  //
+  //    println(str)
+  //  }
 
 //  def main(args: Array[String]): Unit = {
+//    getMysqlData
+//    val portfolioStrs = getPortfolioFromMysql(getMysqlData)
+//    //insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}')
+//    NamedDB('hive).localTx { implicit session =>
+//      portfolioStrs.foreach(line => {
+//        SQL("insert overwrite table  portfolio_test (sKey,sValue,updatetime) values(?,?,?)").bind(line.sKey,2,line.updatetime).update().apply()
+//      })
+//      NamedDB('hive).close()
+//    }
+//  }
+//
+//  def getMysqlData()={
 //    DBs.setupAll()
 //    val peoples = NamedDB('mysql).readOnly { implicit session =>
 //      SQL("select * from t_portfolio").map(rs => Portfolio(rs.string("sKey"),rs.bytes("sValue"),rs.string("updatetime"))).list().apply()
 //    }
-//    val portfolioStrs = peoples.map(one => {
+//    NamedDB('mysql).close()
+//    peoples
+//  }
+//
+//  def getPortfolioFromMysql(dataMysql: scala.List[Portfolio]):List[PortfolioStr] ={
+//    val portfolioStrs = dataMysql.map(one => {
 //      val value = one.sValue
 //      val stream = new BaseDecodeStream(value)
 //      val list = new ProSecInfoList()
 //      list.readFrom(stream)
-//      println(JSON.toJSONString(list, SerializerFeature.WriteMapNullValue))
 //      val sValue = JSON.toJSONString(list, SerializerFeature.WriteMapNullValue)
 //      PortfolioStr(one.sKey, sValue, one.updatetime)
 //    })

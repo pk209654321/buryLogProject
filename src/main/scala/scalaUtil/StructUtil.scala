@@ -82,27 +82,97 @@ object StructUtil {
     StructField("meid", StringType),
     StructField("idfa", StringType)
   ))
+
   //map类型划分
   val structClientMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
   val structWebMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
   val structVisitMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
   val structPhoneWebMap = StructType(List(StructField("map_col", MapType(StringType, StringType))))
   //map_ip类型划分
-  val structCommonMapIp=StructType(List(StructField("map_col",MapType(StringType,StringType)),
-    StructField("sip",StringType)
+  val structCommonMapIp = StructType(List(StructField("map_col", MapType(StringType, StringType)),
+    StructField("sip", StringType)
   ))
   //map_ip_map类型划分
-  val structCommonMapIpMap=StructType(List(StructField("map_col",MapType(StringType,StringType)),
-    StructField("sip",StringType),
-    StructField("other_map",MapType(StringType,StringType))
+  val structCommonMapIpMap = StructType(List(StructField("map_col", MapType(StringType, StringType)),
+    StructField("sip", StringType),
+    StructField("other_map", MapType(StringType, StringType))
   ))
   //string_ip_map类型划分
-  val structCommonStringIpMap=StructType(List(StructField("log_str",StringType),
-    StructField("sip",StringType),
-    StructField("other_map",MapType(StringType,StringType))
+  val structCommonStringIpMap = StructType(List(StructField("log_str", StringType),
+    StructField("sip", StringType),
+    StructField("other_map", MapType(StringType, StringType))
   ))
   //string_ip类型划分
-  val structCommonStringIp=StructType(List(StructField("log_str",StringType),StructField("sip",StringType)))
+  val structCommonStringIp = StructType(List(StructField("log_str", StringType), StructField("sip", StringType)))
   //portfolio类型划分
-  val structPortfolio=StructType(List(StructField("sKey",StringType),StructField("sValue",StringType),StructField("updatetime",StringType)))
+  val structPortfolio = StructType(List(StructField("sKey", StringType), StructField("sValue", StringType), StructField("updatetime", StringType)))
+  val structPortfolioMany = StructType(
+    List(
+      StructField("bRecvAnnounce", BooleanType),
+      StructField("bRecvResearch", BooleanType),
+      StructField("fChipHighPrice", FloatType),
+      StructField("fChipLowPrice", FloatType),
+      StructField("fDecreasesPer", FloatType),
+      StructField("fHighPrice", FloatType),
+      StructField("fIncreasePer", FloatType),
+      StructField("fLowPrice", FloatType),
+      StructField("fMainChipHighPrice", FloatType),
+      StructField("fMainChipLowPrice", FloatType),
+      StructField("iCreateTime", IntegerType),
+      StructField("iUpdateTime", IntegerType),
+      StructField("iVersion", IntegerType),
+      StructField("sAiAlert", BooleanType),
+      StructField("sDel", BooleanType),
+      StructField("sDKAlert", BooleanType),
+      StructField("sDtSecCode", StringType),
+      StructField("sHold", BooleanType),
+      StructField("sKey", StringType),
+      StructField("sName", StringType),
+      StructField("stCommentInfo_iCreateTime", IntegerType),
+      StructField("stCommentInfo_iUpdateTime", IntegerType),
+      StructField("stCommentInfo_sComment", StringType),
+      StructField("updateTime", StringType)
+    ))
+  val structPortfolioProSecInfo = StructType(
+    List(
+      StructField("bRecvAnnounce", BooleanType),
+      StructField("bRecvResearch", BooleanType),
+      StructField("fChipHighPrice", FloatType),
+      StructField("fChipLowPrice", FloatType),
+      StructField("fDecreasesPer", FloatType),
+      StructField("fHighPrice", FloatType),
+      StructField("fIncreasePer", FloatType),
+      StructField("fLowPrice", FloatType),
+      StructField("fMainChipHighPrice", FloatType),
+      StructField("fMainChipLowPrice", FloatType),
+      StructField("iCreateTime", IntegerType),
+      StructField("iUpdateTime", IntegerType),
+      StructField("iVersion", IntegerType),
+      StructField("isAiAlert", BooleanType),
+      StructField("isDel", BooleanType),
+      StructField("isDKAlert", BooleanType),
+      StructField("sDtSecCode", StringType),
+      StructField("isHold", BooleanType),
+      StructField("sKey", StringType),
+      StructField("sName", StringType),
+      StructField("stCommentInfo_iCreateTime", IntegerType),
+      StructField("stCommentInfo_iUpdateTime", IntegerType),
+      StructField("stCommentInfo_sComment", StringType),
+      StructField("vBroadcastTime",ArrayType(IntegerType)),
+      StructField("vStrategyId",ArrayType(IntegerType)),
+      StructField("updateTime", StringType)
+    ))
+
+  val structPortGroupInfo=StructType(List(
+    StructField("gi_iCreateTime", IntegerType),
+    StructField("gi_isDel", BooleanType),
+    StructField("gi_iUpdateTime", IntegerType),
+    StructField("gi_sGroupName", StringType),
+    StructField("gs_isDel", BooleanType),
+    StructField("gs_iUpdateTime", IntegerType),
+    StructField("gs_sDtSecCode", StringType),
+    StructField("iVersion", IntegerType),
+    StructField("sKey", StringType),
+    StructField("updateTime", StringType)
+  ))
 }
