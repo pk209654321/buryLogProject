@@ -28,9 +28,13 @@ public class JavaTest {
         return result.toString();
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         File file = new File("E:\\desk\\日志\\bury.log");
         txt2String(file);
+    }*/
+
+    public static void main(String[] args) {
+
     }
 
 

@@ -13,7 +13,7 @@ public class HbaseDDL {
     public static void main(String[] args){
         try {
             HBaseUtil.init("");
-            HBaseUtil.createTableSplit("test:bury_hbase", 10,"f1");
+            HBaseUtil.createTableSplit("bury_log:bury_log_login", 2,"f1");
         } catch (Exception e) {
             e.printStackTrace();
         }

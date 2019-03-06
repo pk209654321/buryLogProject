@@ -112,4 +112,31 @@ object BuryCleanCommon {
       }
     }
   }
+
+
+  //优化cleanCommonFunction清洗代码
+  val cleanCommonToListBuryLogin: String => util.List[BuryLogin] = (line: String) => {
+    var listbury: java.util.List[BuryLogin] = new util.ArrayList[BuryLogin]()
+    val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
+    try {
+      var bury = ""
+      val jsonAndIp: Array[String] = all.split("&")
+      val ifList = all.indexOf("[")
+      val i = all.lastIndexOf("&")
+      val ipTemp = all.substring(i + 1, all.length)
+      if (ifList == 0) { //如果==0 是打包上传传递的是jsonList格式的日志
+        bury = all.substring(0, i)
+      } else {
+        bury = "[" + all.substring(0, i) + "]"
+      }
+      listbury = JSON.parseArray(bury, classOf[BuryLogin])
+      for (i <- (0 until listbury.size())) {
+        val login = listbury.get(i)
+        login.ipStr = ipTemp
+      }
+      listbury
+    } catch {
+      case e: Throwable => println(s"error_log-----------------------${all}"); listbury
+    }
+  }
 }

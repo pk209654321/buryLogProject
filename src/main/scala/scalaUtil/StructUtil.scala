@@ -175,4 +175,31 @@ object StructUtil {
     StructField("sKey", StringType),
     StructField("updateTime", StringType)
   ))
+
+  val structShareMany=StructType(List(
+    StructField("bgcolor", IntegerType),
+    StructField("bgUrl", StringType),
+    StructField("code", IntegerType),
+    StructField("desc", StringType),
+    StructField("downShareViewUrl", StringType),
+    StructField("link", StringType),
+    StructField("mb_content", StringType),
+    StructField("mb_contentLink", StringType),
+    StructField("mb_textColor", StringType),
+    StructField("mb_type", StringType),
+    StructField("middleChar", StringType),
+    StructField("name", StringType),
+    StructField("permission", IntegerType),
+    StructField("person", IntegerType),
+    StructField("posterChar", StringType),
+    StructField("randomTitle", StringType),
+    StructField("randomTitleConfigs", ArrayType(StringType)),
+    StructField("sceneCode", IntegerType),
+    StructField("shareImgUrl", StringType),
+    StructField("shareTitle", StringType),
+    StructField("shareType", IntegerType),
+    StructField("topBlockLink", StringType),
+    StructField("topBlockUrl", StringType),
+    StructField("upShareViewUrl", StringType)
+  ))
 }

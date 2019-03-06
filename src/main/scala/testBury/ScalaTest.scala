@@ -4,10 +4,12 @@ import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
 import com.dengtacj.bec.ProSecInfoList
 import com.qq.tars.protocol.tars.BaseDecodeStream
+import com.typesafe.config.ConfigFactory
 import hadoopCode.hbaseCommon.HBaseUtil
 import org.apache.commons.lang3.StringUtils
+import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.Json
-import scalaUtil.{DateScalaUtil, HttpPostUtil}
+import scalaUtil.{DateScalaUtil, HttpPostUtil, LocalOrLine}
 import scalikejdbc.{DB, NamedDB, SQL}
 import scalikejdbc.config.DBs
 import sparkAction.{Portfolio, PortfolioStr}
@@ -23,7 +25,7 @@ import scala.util.parsing.json.JSONObject
   * Author lenovo
   * Date 2018/12/29 10:50
   **/
-object TempTest {
+object ScalaTest {
   //  def main(args: Array[String]): Unit = {
   //    val map = mutable.HashMap[String,Int]()
   //        for (a <- 1 to 1000){
@@ -120,6 +122,25 @@ object TempTest {
 //    })
 //    portfolioStrs
 //  }
+
+//  def main(args: Array[String]): Unit = {
+//
+//    val local: Boolean = LocalOrLine.judgeLocal()
+//    var sparkConf: SparkConf = new SparkConf().setAppName("HeraTest")
+//    if (local) {
+//      //System.setProperty("HADOOP_USER_NAME", "wangyd")
+//      sparkConf = sparkConf.setMaster("local[*]")
+//    }
+//    val sc = new SparkContext(sparkConf)
+//    val allDataRdd = sc.textFile("hdfs://188.185.1.41:8020/wangyadong/hera")
+//    println(allDataRdd.flatMap(_.split(" ")).map((_, 1)).reduceByKey(_ + _).collect().toList)
+//  }
+
+  def main(args: Array[String]): Unit = {
+    val load = ConfigFactory.load()
+    val topics = load.getString("kafka.topics").split(",").toSet
+    println(topics)
+  }
 
 }
 

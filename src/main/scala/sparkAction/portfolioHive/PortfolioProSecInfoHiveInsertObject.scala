@@ -2,6 +2,7 @@ package sparkAction.portfolioHive
 
 import java.util
 
+import bean.share.ShareMany
 import bean.{PortGroupInfo, PortfolioBean}
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
@@ -20,6 +21,7 @@ object PortfolioProSecInfoHiveInsertObject {
   private val TABLE: String = ConfigurationManager.getProperty("portfolioTableTest")
   private val TABLE_MANY: String = ConfigurationManager.getProperty("portfolioTableTestMany")
   private val TABLE_GROUP: String = ConfigurationManager.getProperty("portfolioTableTestGroup")
+  private val TABLE_SHARE: String = ConfigurationManager.getProperty("portfolioTableTestShare")
   def insertPortfolioToHive(portData:RDD[PortfolioStr],hc: HiveContext,dayFlag:Int): Unit ={
    val portRow= portData.map(line => {
       Row(line.sKey,line.sValue,line.updatetime)
@@ -34,10 +36,10 @@ object PortfolioProSecInfoHiveInsertObject {
     val portRow = many.map(line => {
       var broadCastTime = line.getvBroadcastTime()
       var strategyId = line.getvStrategyId()
-      if(broadCastTime.size()==0){
+      if(broadCastTime!=null&&broadCastTime.size()==0){
         broadCastTime=null
       }
-      if(strategyId.size()==0){
+      if(strategyId!=null&&strategyId.size()==0){
         strategyId=null
       }
       Row(
@@ -94,6 +96,40 @@ object PortfolioProSecInfoHiveInsertObject {
     createDataFrame.registerTempTable("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
     hc.sql(s"insert overwrite  table ${TABLE_GROUP} partition(hp_stat_date='${timeStr}') select * from tempTable")
+  }
+
+  def insertShareControl( shareRdds: RDD[ShareMany],hc: HiveContext)={
+    val shareRow = shareRdds.map(line => {
+      Row(
+        line.getBgcolor,
+        line.getBgUrl,
+        line.getCode,
+        line.getDesc,
+        line.getDownShareViewUrl,
+        line.getLink,
+        line.getMb_content,
+        line.getMb_contentLink,
+        line.getMb_textColor,
+        line.getMb_type,
+        line.getMiddleChar,
+        line.getName,
+        line.getPermission,
+        line.getPerson,
+        line.getPosterChar,
+        line.getRandomTitle,
+        line.getRandomTitleConfigs,
+        line.getSceneCode,
+        line.getShareImgUrl,
+        line.getShareTitle,
+        line.getShareType,
+        line.getTopBlockLink,
+        line.getTopBlockUrl,
+        line.getUpShareViewUrl
+      )
+    })
+    val createDataFrame = hc.createDataFrame(shareRow,StructUtil.structShareMany)
+    createDataFrame.registerTempTable("tempTable")
+    hc.sql(s"insert overwrite  table ${TABLE_SHARE} select * from tempTable")
   }
 
 

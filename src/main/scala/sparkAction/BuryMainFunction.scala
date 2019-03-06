@@ -36,9 +36,9 @@ object BuryMainFunction {
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
       val hc: HiveContext = new HiveContext(sc)
-      //for (dayFlag <- (diffDay to -1)) { //按天数循环
-        val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
-        //val realPath="E:\\desk\\新版本日志\\新建文件夹"
+      for (dayFlag <- (diffDay to -1)) { //按天数循环
+        val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(dayFlag, 2)
+        //val realPath="E:\\desk\\新版本日志"
         val file: RDD[String] = sc.textFile(realPath, 1)
         val dictRdd = sc.textFile(dict).collect()
         val dictBrod = sc.broadcast(dictRdd).value
@@ -53,10 +53,10 @@ object BuryMainFunction {
         val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
 
         //老规则数据清洗入库
-        oldVersionCleanInsert(oldDataOneRdd,hc,diffDay)
+        oldVersionCleanInsert(oldDataOneRdd,hc,0)
         //新规则数据+老规则数据清洗入库
-        newVersionCleanInsert(allDataOneRdd,hc,diffDay,dictBrod)
-      //}
+        newVersionCleanInsert(allDataOneRdd,hc,0,dictBrod)
+      }
       sc.stop()
     } catch {
       case e: Throwable => MailUtil.sendMail("spark日志清洗调度", "清洗日志失败");e.printStackTrace()
@@ -77,27 +77,27 @@ object BuryMainFunction {
     BuryPhoneWebTableMapIp.cleanPhoneWebData(filterPhoneWeb, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
-    val filterVisit = oldDataRddList.filter(_.logType == 1) //过滤出访问日志Data
+    //val filterVisit = oldDataRddList.filter(_.logType == 1) //过滤出访问日志Data
     //清洗出股掌柜手机客户端访问日志数据
-    BuryVisitTableMapIp.cleanVisitData(filterVisit, hc, dayFlag)
+    //BuryVisitTableMapIp.cleanVisitData(filterVisit, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     val filterAction = oldDataRddList.filter(_.logType == 2) //过滤出行为日志Data
     //过滤出客户端行为日志
-    val filterClient = filterAction.filter(BuryCleanCommon.getPhoneClientActionLog)
+    //val filterClient = filterAction.filter(BuryCleanCommon.getPhoneClientActionLog)
     //清洗出股掌柜手机客户端行为数据
-    BuryPhoneClientTableMapIp.cleanPhoneClientData(filterClient, hc, dayFlag)
+    //BuryPhoneClientTableMapIp.cleanPhoneClientData(filterClient, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
-    //清洗出股掌柜手机客户端行为数据
+    //清洗出股掌柜pc客户端行为数据
     val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
     BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
     //过滤出手机客户端内嵌网页端行为日志
-    val filterWeb = filterAction.filter(_.source==3)
+    //val filterWeb = filterAction.filter(_.source==3)
     //清洗股掌柜手机客户端内嵌网页行为数据
-    BuryClientWebTableMapIp.cleanClientWebData(filterWeb, hc, dayFlag)
+    //BuryClientWebTableMapIp.cleanClientWebData(filterWeb, hc, dayFlag)
   }
 
   //新+旧(日志)一起清洗
