@@ -4,7 +4,7 @@ import java.util
 import java.util.Date
 
 import com.alibaba.fastjson.JSON
-import hadoopCode.hbaseCommon.HBaseUtil
+import hadoopCode.hbaseCommon.HBaseUtilTest
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}

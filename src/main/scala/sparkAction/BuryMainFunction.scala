@@ -36,35 +36,44 @@ object BuryMainFunction {
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
       val hc: HiveContext = new HiveContext(sc)
-      for (dayFlag <- (diffDay to -1)) { //按天数循环
-        val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(dayFlag, 2)
-        //val realPath="E:\\desk\\新版本日志"
-        val file: RDD[String] = sc.textFile(realPath, 1)
-        val dictRdd = sc.textFile(dict).collect()
-        val dictBrod = sc.broadcast(dictRdd).value
-        val filterBlank: RDD[String] = file.filter(line => {
-          //过滤为空的和有ip但是post传递为空的
-          StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
-        })
-        //清洗去掉不规则字符
-        val allData = filterBlank.map(BuryCleanCommon.cleanCommonFunction).filter(_.size()>0)
-        val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
-        val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).cache()
-        val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
+      //for (dayFlag <- (diffDay to -1)) { //按天数循环
+      //val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
+      val realPath="E:\\desk\\日志"
+      val file: RDD[String] = sc.textFile(realPath, 1)
+      val dictRdd = sc.textFile(dict).collect()
+      val dictBrod = sc.broadcast(dictRdd).value
+      val filterBlank: RDD[String] = file.filter(line => {
+        //过滤为空的和有ip但是post传递为空的
+        StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
+      })
+      //清洗去掉不规则字符
+      val allData = filterBlank.map(BuryCleanCommon.cleanCommonFunction).filter(_.size() > 0)
+      val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
+      var allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
+      allDataOneRdd = allDataOneRdd.filter(line => {
+        val timeStr = BuryCleanCommon.getDayTimeByTime(line)
+        val str = timeStr.substring(0, 8)
+        if (str == "20190308") {
+          true
+        } else {
+          false
+        }
+      })
+      val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
 
-        //老规则数据清洗入库
-        oldVersionCleanInsert(oldDataOneRdd,hc,0)
-        //新规则数据+老规则数据清洗入库
-        newVersionCleanInsert(allDataOneRdd,hc,0,dictBrod)
-      }
+      //老规则数据清洗入库
+      oldVersionCleanInsert(oldDataOneRdd, hc, diffDay)
+      //新规则数据+老规则数据清洗入库
+      newVersionCleanInsert(allDataOneRdd, hc, diffDay, dictBrod)
+      // }
       sc.stop()
     } catch {
-      case e: Throwable => MailUtil.sendMail("spark日志清洗调度", "清洗日志失败");e.printStackTrace()
+      case e: Throwable => MailUtil.sendMail("spark日志清洗调度", "清洗日志失败"); e.printStackTrace()
     }
   }
 
   //清洗老日志
-  def oldVersionCleanInsert(oldDataRddList: RDD[BuryLogin],hc: HiveContext,dayFlag:Int): Unit = {
+  def oldVersionCleanInsert(oldDataRddList: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
     //过滤出pc端web日志
     val pcWebRdd = oldDataRddList.filter(BuryCleanCommon.getPcWebLog)
     //清洗出pc端web日志
@@ -89,7 +98,7 @@ object BuryMainFunction {
     //BuryPhoneClientTableMapIp.cleanPhoneClientData(filterClient, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
-    //清洗出股掌柜pc客户端行为数据
+    //过滤出股掌柜pc客户端行为数据
     val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
     BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)
@@ -101,7 +110,7 @@ object BuryMainFunction {
   }
 
   //新+旧(日志)一起清洗
-  def newVersionCleanInsert(DataRddList: RDD[BuryLogin],hc: HiveContext,dayFlag:Int,dictBrod:Array[String]) = {
+  def newVersionCleanInsert(DataRddList: RDD[BuryLogin], hc: HiveContext, dayFlag: Int, dictBrod: Array[String]) = {
     //过滤出pc端web日志
     //val pcWebRdd = DataRddList.filter(BuryCleanCommon.getPcWebLog)
     //清洗出pc端web日志
@@ -131,9 +140,9 @@ object BuryMainFunction {
     //BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)
     //-------------------------------------------------------------------------------------------------------
     //过滤出手机客户端内嵌网页端行为日志
-    val filterWeb = filterAction.filter(_.source==3)
+    val filterWeb = filterAction.filter(_.source == 3)
     //清洗股掌柜手机客户端内嵌网页行为数据
-    BuryClientWebTableStringIp.cleanClientWebData(filterWeb, hc, dayFlag,dictBrod)
+    BuryClientWebTableStringIp.cleanClientWebData(filterWeb, hc, dayFlag, dictBrod)
   }
 }
 

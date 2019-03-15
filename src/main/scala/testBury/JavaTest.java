@@ -1,8 +1,12 @@
 package testBury;
 
+import rabbitCode.RpcForUserLineClient;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @ClassName JavaTest
@@ -33,8 +37,13 @@ public class JavaTest {
         txt2String(file);
     }*/
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) throws Exception {
+        RpcForUserLineClient rpcClient = new RpcForUserLineClient();
+        rpcClient.call("wyd测试");
+    }*/
 
+    public static void main(String[] args) throws Exception {
+        System.out.println(System.currentTimeMillis());
     }
 
 

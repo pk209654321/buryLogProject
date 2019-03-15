@@ -20,7 +20,7 @@ import scala.collection.{JavaConversions, mutable}
 
 /**
   * ClassName PortfolioMainFunction
-  * Description TODO
+  * Description TODO 用户自选股信息接入,分享控件信息接入
   * Author lenovo
   * Date 2019/2/12 9:16
   **/

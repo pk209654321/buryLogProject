@@ -57,17 +57,17 @@ object KafkaWordCount2 {
         .replaceAll(":", "")
         .replaceAll(" ", "")
         .trim
-      val code = HBaseUtil.getPartitonCode(time, 10)
+      val code = HBaseUtilTest.getPartitonCode(time, 10)
       val guid = findCommonFun(one.line,5,"guid=")
       val accessTime = findCommonFun(one.line,12,"access_time=")
       val offlineTime = findCommonFun(one.line,13,"offline_time=")
-      val rowKey = HBaseUtil.getVisitRowKey(code,time,guid,offlineTime)
+      val rowKey = HBaseUtilTest.getVisitRowKey(code,time,guid,offlineTime)
       (rowKey, one.line)
     })
     rowKeyContent.foreachRDD(rdds => {
       rdds.foreachPartition(par => {
         //val list = new util.ArrayList[HbaseBean]()
-        HBaseUtil.init("")
+        HBaseUtilTest.init("")
         val puts = new util.ArrayList[Put]()
         par.foreach(line => {
           val rowKey = line._1
@@ -77,7 +77,7 @@ object KafkaWordCount2 {
           puts.add(put)
         })
         try {
-          val l = HBaseUtil.putByHTable(HBASE_TABLE_NAME, puts)
+          val l = HBaseUtilTest.putByHTable(HBASE_TABLE_NAME, puts)
           println("hbase insert success 耗费时间:"+l)
         } catch {
           case e:Exception => MailUtil.sendMail("sparkstreaming error","hbase insert 失败:"+e.getMessage);e.printStackTrace()

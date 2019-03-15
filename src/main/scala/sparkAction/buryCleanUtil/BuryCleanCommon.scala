@@ -4,7 +4,7 @@ import java.util
 
 import com.alibaba.fastjson.JSON
 import org.apache.commons.lang3.StringUtils
-import scalaUtil.MailUtil
+import scalaUtil.{DateScalaUtil, MailUtil}
 import sparkAction.BuryLogin
 
 /**
@@ -138,5 +138,17 @@ object BuryCleanCommon {
     } catch {
       case e: Throwable => println(s"error_log-----------------------${all}"); listbury
     }
+  }
+
+  //根据不同的时间格式转换当前时间
+  def getDayTimeByTime(bury:BuryLogin): String ={
+    var time = bury.sendTime
+    if (StringUtils.isNumeric(time)) {
+      time = DateScalaUtil.tranTimeToString(time, 0)
+    }
+    time.replaceAll("-", "")
+      .replaceAll(":", "")
+      .replaceAll(" ", "")
+      .trim
   }
 }

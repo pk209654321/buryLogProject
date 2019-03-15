@@ -12,6 +12,7 @@ import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scalaUtil.RandomCharData;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -166,6 +167,22 @@ public class HBaseUtil {
 				.append(timeStr+"_")
 				.append(guid+"_")
 				.append(offlineTime);
+		return sb.toString();
+	}
+	public static String getVisitRowKey(int regions,String timeStr,int length){
+		/**
+		 　　* @Description: TODO 获取访问日志的RowKey(分区号+时间戳+随机数)
+		 　　* @param [regions, timeStr, length]
+		 　　* @return java.lang.String
+		 　　* @throws
+		 　　* @author lenovo
+		 　　* @date 2019/1/15 13:09
+		 　　*/
+		String partitonCode = getPartitonCode(timeStr,regions);
+		StringBuilder sb = new StringBuilder();
+		sb.append(partitonCode + "_")
+				.append(timeStr+"_")
+				.append(RandomCharData.createRandomCharData(length));
 		return sb.toString();
 	}
 

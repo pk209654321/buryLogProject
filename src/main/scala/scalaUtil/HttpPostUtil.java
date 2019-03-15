@@ -35,7 +35,6 @@ public class HttpPostUtil {
                     String.valueOf(xmlData.length));
             urlCon.setConnectTimeout(30000);
             urlCon.setReadTimeout(30000);
-            System.out.println(String.valueOf(xmlData.length));
             DataOutputStream printout = new DataOutputStream(
                     urlCon.getOutputStream());
             printout.write(xmlData);

@@ -28,13 +28,13 @@ import com.alibaba.fastjson.JSONObject;
 
 /**
  * 
- * Title: HBaseUtil
+ * Title: HBaseUtilTest
  * Description: HBase工具类 
  * Version:1.0.0
  * @author pancm
  * @date 2017年12月6日
  */
-public class HBaseUtil {
+public class HBaseUtilTest {
     /** hadoop 连接 */
     private static Configuration conf = null;
     /** hbase 连接 */

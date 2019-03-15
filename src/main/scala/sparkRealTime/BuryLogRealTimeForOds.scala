@@ -1,6 +1,7 @@
 package sparkRealTime
 
-import com.alibaba.fastjson.JSON
+import java.util
+
 import com.typesafe.config.ConfigFactory
 import hadoopCode.sparkRealTime.KafkaCluster
 import kafka.common.TopicAndPartition
@@ -13,6 +14,7 @@ import scalikejdbc._
 import scalikejdbc.config.DBs
 import sparkAction.BuryLogin
 import sparkAction.buryCleanUtil.BuryCleanCommon
+import sparkRealTime.buryLogRealTimeOdsTables.{RealTimePcWeb, RealTimeStockClient, RealTimeStockLogin, RealTimeStockWeb}
 
 /**
   * ClassName BuryLogRealTimeMysql
@@ -20,7 +22,7 @@ import sparkAction.buryCleanUtil.BuryCleanCommon
   * Author lenovo
   * Date 2019/3/5 14:10
   **/
-object BuryLogRealTimeMysql {
+object BuryLogRealTimeForOds {
   def main(args: Array[String]): Unit = {
     val load = ConfigFactory.load()
     //获取偏移量表名称
@@ -29,7 +31,7 @@ object BuryLogRealTimeMysql {
     val kafkaParams = Map(
       "metadata.broker.list" -> load.getString("kafka.broker.list"),
       "group.id" -> load.getString("kafka.group.id"),
-      "auto.offset.reset" -> kafka.api.OffsetRequest.SmallestTimeString
+      "auto.offset.reset" -> kafka.api.OffsetRequest.LargestTimeString
     )
     val topics = load.getString("kafka.topics").split(",").toSet
 
@@ -42,7 +44,7 @@ object BuryLogRealTimeMysql {
     // 加载配置信息
     DBs.setupAll()
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
-      SQL("select * from " + tableName + " where groupid=?").bind(load.getString("kafka.group.id")).map(rs => {
+      SQL("select * from " + tableName + " where groupid=? and topic=?").bind(load.getString("kafka.group.id"),load.getString("kafka.topics")).map(rs => {
         (TopicAndPartition(rs.string("topic"), rs.int("partitions")), rs.long("offset"))
       }).list().apply()
     }.toMap
@@ -80,44 +82,40 @@ object BuryLogRealTimeMysql {
         val buryAnyRef = buryList.flatMap(_.toArray)
         val buryOne = buryAnyRef.map(_.asInstanceOf[BuryLogin])
         //获取用户访问日志
-        val buryLogins = buryOne.filter(_.logType==1)
-        buryLogins.foreach(one => {
-          val lineStr = one.line
-          val strings = lineStr.split("\\|")
-          val i = strings(0).indexOf("=")
-          if(i>=0){//旧版日志
-            strings.foreach(kv=> {
-              val _kv = kv.split("=")
-              val key = _kv(0).trim
-              val value = _kv(1).trim
-              key match {
-                case "user_id" =>
-                case "guid" =>
-                case "access_time" =>
-                case "offline_time" =>
-                case "download_channel" =>
-                case "client_version" =>
-                case "phone_model" =>
-                case "phone_system" =>
-                case "system_version" =>
-                case "operator" =>
-                case "network" =>
-                case "resolution" =>
-                case "screen_height" =>
-                case "screen_width" =>
-                case "mac" =>
-                case "ip" =>
-                case "imei" =>
-                case "iccid" =>
-                case "meid" =>
-                case "idfa" =>
-                case _=>println("其他key------"+key)
-              }
-            })
-          }else{//新版日志
+        val buryLogins = buryOne.filter(_.logType == 1)
+        //实时处理用户访问日志
+        RealTimeStockLogin.doRealTimeStockLogin(buryLogins,load)
+        //=============================================================================
+        //过滤出行为日志(包含移动app和pc端)
+        val buryAction = buryOne.filter(_.logType==2)
+        //过滤出客户端行为日志
+        val buryClient = buryAction.filter(BuryCleanCommon.getPhoneClientActionLog)
+        //实时处理客户端行为日志
+        RealTimeStockClient.doRealTimeStockClient(buryClient,load)
+        //=============================================================================
+        //过滤出手机客户端内嵌网页端行为日志
+        val buryClientWeb = buryAction.filter(_.source==3)
+        //实时处理手机客户端内嵌网页端行为日志
+        RealTimeStockWeb.doRealTimeStockWeb(buryClientWeb,load)
+        //=============================================================================
+        //过滤出老版日志
+        val oldData = buryLogins.filter(BuryCleanCommon.getOldVersionFunction)
+        //过滤出pc端web日志
+        val buryPcWeb = oldData.filter(BuryCleanCommon.getPcWebLog)
+        //实时处理pc端web日志
+        RealTimePcWeb.doRealTimePcWeb(buryPcWeb,load)
+        //=============================================================================
+        //过滤出手机web日志
+        val buryPhoneWeb = oldData.filter(BuryCleanCommon.getPhoneWebLog)
+        //实时处理手机端web日志
 
-          }
-        })
+        //=============================================================================
+        //过滤出股掌柜pc客户端行为数据
+        val pcClientAction = oldData.filter(_.source==4)
+        //实时处理pc客户端行为日志
+        //=============================================================================
+
+
       })
       val offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
       // 记录偏移量
@@ -128,6 +126,8 @@ object BuryLogRealTimeMysql {
         }
         // println(s"${osr.topic} ${osr.partition} ${osr.fromOffset} ${osr.untilOffset}")
       })
+      //删除七天之前的数据
+
     })
     // 启动程序，等待程序终止
     ssc.start()

@@ -16,7 +16,7 @@ public class RandomCharData {
     //0~9的ASCII为48~57
     //A~Z的ASCII为65~90
     //a~z的ASCII为97~122
-    public synchronized static String createRandomCharData(int length)
+    public static String createRandomCharData(int length)
     {
         StringBuilder sb=new StringBuilder();
         Random rand=new Random();//随机用以下三个随机生成器

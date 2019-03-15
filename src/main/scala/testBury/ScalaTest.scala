@@ -5,7 +5,7 @@ import com.alibaba.fastjson.serializer.SerializerFeature
 import com.dengtacj.bec.ProSecInfoList
 import com.qq.tars.protocol.tars.BaseDecodeStream
 import com.typesafe.config.ConfigFactory
-import hadoopCode.hbaseCommon.HBaseUtil
+import hadoopCode.hbaseCommon.HBaseUtilTest
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.Json
@@ -34,7 +34,7 @@ object ScalaTest {
   //            .replaceAll(":", "")
   //            .replaceAll(" ", "")
   //            .trim
-  //          val str = HBaseUtil.getPartitonCode(time,10)
+  //          val str = HBaseUtilTest.getPartitonCode(time,10)
   //          println(str)
   //          var i = map.getOrElse(str,0)
   //          if(i==0){//里面数据
@@ -136,10 +136,30 @@ object ScalaTest {
 //    println(allDataRdd.flatMap(_.split(" ")).map((_, 1)).reduceByKey(_ + _).collect().toList)
 //  }
 
-  def main(args: Array[String]): Unit = {
+ /* def main(args: Array[String]): Unit = {
     val load = ConfigFactory.load()
     val topics = load.getString("kafka.topics").split(",").toSet
     println(topics)
+  }*/
+// def main(args: Array[String]): Unit = {
+//   val str="138353|561b848ca33cd50e554192f06a787184|1551960039|1551960040|huawei|2.5.0|DIG-AL00|android|6.0|N/A|4G|720x1208|604|360|70:8A:09:E0:64:E6|866294038131308|89861114250296137592|866294038131308|"
+//   println(str(18))
+//   println(str.split("\\|",-1).length)
+// }
+
+  def main(args: Array[String]): Unit = {
+    var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
+    val local: Boolean = LocalOrLine.judgeLocal()
+    if (local) {
+      //System.setProperty("HADOOP_USER_NAME", "wangyd")
+      sparkConf = sparkConf.setMaster("local[*]")
+    }
+    val sc: SparkContext = new SparkContext(sparkConf)
+    sc.setLogLevel("WARN")
+    val rdd1 = sc.parallelize(List(("a",1),("b",1),("c",1),("d",1),("e",1),("f",1)))
+    val rdd2 = sc.parallelize(List(("b",1),("c",1),("d",1)))//
+    println(rdd1.leftOuterJoin(rdd2).filter(_._2._2.isEmpty).collect().toList)
+
   }
 
 }

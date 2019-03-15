@@ -23,7 +23,7 @@ public class MyTaskRun implements Runnable {
     public void run() {
         try {
             // 开始执行任务
-            //HBaseUtil.put("logs", puts);
+            //HBaseUtilTest.put("logs", puts);
         } catch (Exception e) {
             e.printStackTrace();
         }
