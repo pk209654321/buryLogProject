@@ -5,16 +5,13 @@ import hadoopCode.sparkRealTime.KafkaCluster
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils}
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
+import scalaUtil.LocalOrLine
 import scalikejdbc._
 import scalikejdbc.config.DBs
-import sparkAction.BuryLogin
-import sparkAction.buryCleanUtil.BuryCleanCommon
 import sparkRealTime.buryLogRealTimeForCrm.RealTimeCrmLineTimeIp
-import sparkRealTime.buryLogRealTimeOdsTables.{RealTimePcWeb, RealTimeStockClient, RealTimeStockLogin, RealTimeStockWeb}
 
 /**
   * ClassName BuryLogRealTimeMysql
@@ -24,6 +21,7 @@ import sparkRealTime.buryLogRealTimeOdsTables.{RealTimePcWeb, RealTimeStockClien
   **/
 object BuryLogRealTimeForOnLine {
   def main(args: Array[String]): Unit = {
+    val local: Boolean = LocalOrLine.judgeLocal()
     val load = ConfigFactory.load()
     //获取偏移量表名称
     val tableName = load.getString("kafka.offset.table")
@@ -36,9 +34,11 @@ object BuryLogRealTimeForOnLine {
     val topics = load.getString("kafka.topics").split(",").toSet
 
     // StreamingContext
-    val sparkConf = new SparkConf().setMaster("local[*]").setAppName("BuryLogRealTimeForOnLine")
+    val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLine")
+    if(local){
+      sparkConf.setMaster("local[*]")
+    }
     val sc = new SparkContext(sparkConf)
-    val hc = new HiveContext(sc)
     val ssc = new StreamingContext(sc, Seconds(10))
 
     // 加载配置信息
@@ -77,7 +77,7 @@ object BuryLogRealTimeForOnLine {
 
     stream.foreachRDD(oneRdd => {
       //实时处理
-      RealTimeCrmLineTimeIp.doRealTimeCrmLineTimeIp(oneRdd,hc,sc)
+      RealTimeCrmLineTimeIp.doRealTimeCrmLineTimeIp(oneRdd,sc)
       val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
       // 记录偏移量
       offsetRanges.foreach(osr => {

@@ -1,4 +1,4 @@
-package sparkAction.mapIpActionList
+package sparkAction.mapIpActionListHive
 
 import java.util
 

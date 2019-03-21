@@ -40,7 +40,13 @@ public class HttpPostUtil {
             printout.write(xmlData);
             printout.flush();
             printout.close();
-
+            instr = urlCon.getInputStream();
+            byte[] bis = IOUtils.toByteArray(instr);
+            String ResponseString = new String(bis, "UTF-8");
+            if ((ResponseString == null) || ("".equals(ResponseString.trim()))) {
+                System.out.println("返回空");
+            }
+            System.out.println("返回数据为:" + ResponseString);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

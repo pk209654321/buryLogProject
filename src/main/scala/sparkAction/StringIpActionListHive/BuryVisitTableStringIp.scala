@@ -29,6 +29,7 @@ object BuryVisitTableStringIp {
     val visitRow: RDD[Row] = filterData.map(one => {
       val ipStr: String = one.ipStr
       val all: String = one.line
+      val sendTime = one.sendTime
       Row(all,ipStr)
     })
     val frame: DataFrame = hc.createDataFrame(visitRow,StructUtil.structCommonStringIp)

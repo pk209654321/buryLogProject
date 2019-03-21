@@ -1,4 +1,4 @@
-package sparkAction.mapIpActionList
+package sparkAction.mapIpActionListHive
 
 import java.util
 
@@ -16,25 +16,25 @@ import scala.collection.mutable
   * Created by lenovo on 2018/11/16.
   *
   */
-object BuryPcClientTableMapIp {
-  private val TABLE: String = ConfigurationManager.getProperty("actionTablePcClient")
+object BuryPcWebTableMapIp {
+  private val TABLE: String = ConfigurationManager.getProperty("actionTablePcWeb")
 
-  def cleanPcClientData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) = {
+  def cleanPcWebData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) = {
     /**
-      * 　　* @Description: 清洗出 PC 客户端的数据insert到hive仓库中
+      * 　　* @Description: 清洗出 PC web端的数据insert到hive仓库中
       * 　　* @param [filterClient, hc, dayFlag]
       * 　　* @return org.apache.spark.sql.DataFrame
       * 　　* @throws
       * 　　* @author lenovo
       * 　　* @date 2018/12/4 17:48
       * 　　*/
-
-    val map: RDD[Row] = filterData.map(one => {
+    val value = filterData.map(one => {
       val line = one.line
       //埋点数据
       val ipStr = one.ipStr
       //真实ip
       val split = line.split("\\|")
+      val client: StockShopClient = new StockShopClient
       val hashMap: mutable.Map[String, String] = new mutable.HashMap[String, String]()
       split.foreach(l => {
         val i = l.indexOf("=")
@@ -49,11 +49,10 @@ object BuryPcClientTableMapIp {
       })
       Row(hashMap, ipStr)
     })
-
-    val createDataFrame: DataFrame = hc.createDataFrame(map, StructUtil.structCommonMapIp)
-    createDataFrame.registerTempTable("StockShopPcClientMapIp")
+    val createDataFrame: DataFrame = hc.createDataFrame(value, StructUtil.structCommonMapIp)
+    createDataFrame.registerTempTable("StockShopPcWebMapIp")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPcClientMapIp"
+    val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPcWebMapIp"
     hc.sql(hql)
 
   }

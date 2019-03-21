@@ -1,4 +1,4 @@
-package sparkAction.mapAction
+package sparkAction.userLoginReport
 
 import bean.StockShopClient
 import conf.ConfigurationManager

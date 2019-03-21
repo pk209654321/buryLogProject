@@ -6,6 +6,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -43,7 +45,28 @@ public class JavaTest {
     }*/
 
     public static void main(String[] args) throws Exception {
-        System.out.println(System.currentTimeMillis());
+     /*   {
+
+	“api” : “”, //api
+
+	“version” : 1,//版本号
+
+	“timestamp” : xxxx, //  毫秒时间戳，整数类型，即最后三位为毫秒
+
+	“data” : {}, // 数据为空时只能为空对象
+
+        }*/
+
+        ArrayList<String> strings = new ArrayList<>();
+        strings.add("_rd");
+        strings.add("_ts");
+        strings.add("user_id");
+        strings.add("last_line_time");
+        //strings.add("data");
+        Collections.sort(strings);
+        for (String string:strings){
+            System.out.println(string);
+        }
     }
 
 

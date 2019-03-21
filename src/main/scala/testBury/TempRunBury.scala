@@ -4,15 +4,17 @@ import java.util
 import java.util.Date
 
 import com.alibaba.fastjson.JSON
+import com.alibaba.fastjson.serializer.SerializerFeature
+import com.google.gson.Gson
 import hadoopCode.hbaseCommon.HBaseUtilTest
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
+import sparkAction.buryCleanUtil.BuryCleanCommon
 import sparkAction.{BuryLogin, BuryMainFunction}
-import sparkAction.mapIpActionList.BuryClientWebTableMapIp
-import sparkAction.mapIpActionListTest.BuryPhoneWebTableMapIpList
+import sparkAction.mapIpActionListHive.BuryClientWebTableMapIp
 
 import scala.collection.mutable
 
@@ -91,13 +93,22 @@ object TempRunBury {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
-    val unit: RDD[util.List[BuryLogin]] = filterBlank.map(cleanCommonFunctionTestList)
-    val filterAction: RDD[util.List[BuryLogin]] = unit.filter(_.get(0).logType==2).filter(oldVersionFunction) //过滤出行为日志Data
-    val webRddList: RDD[util.List[BuryLogin]] = filterAction.filter(line => {
-      val login = line.get(0)
-      login.source == 3
-    })
-
-    BuryPhoneWebTableMapIpList.cleanPhoneWebData(webRddList,hc,0)
+    val tempRddData: RDD[util.List[BuryLogin]] = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size()>0)
+    val rddOneObjcet: RDD[AnyRef] = tempRddData.flatMap(_.toArray())
+    var allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
+    allDataOneRdd.filter(line => {
+      val timeStr = BuryCleanCommon.getDayTimeByTime(line)
+      val str = timeStr.substring(0, 8)
+      if (str == "20190308") {
+        true
+      } else {
+        false
+      }
+    }).map(line => {
+      //JSON.toJSONString(line, SerializerFeature.WriteNullBooleanAsFalse)
+      val gson = new Gson()
+      val value = gson.toJson(line)
+      value
+    }).repartition(1).saveAsTextFile("E:\\desk\\日志out")
   }
 }

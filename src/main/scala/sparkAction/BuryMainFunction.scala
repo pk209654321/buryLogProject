@@ -10,9 +10,8 @@ import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
 import sparkAction.StringIpActionListHive.{BuryClientWebTableStringIp, BuryPhoneClientTableStringIp, BuryVisitTableStringIp}
-import sparkAction.StringIpMapHive.BuryClientWebTableStringIpMap
 import sparkAction.buryCleanUtil.BuryCleanCommon
-import sparkAction.mapIpActionList._
+import sparkAction.mapIpActionListHive._
 
 /**
   * Created by lenovo on 2018/11/16.
@@ -36,9 +35,9 @@ object BuryMainFunction {
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
       val hc: HiveContext = new HiveContext(sc)
-      //for (dayFlag <- (diffDay to -1)) { //按天数循环
-      //val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
-      val realPath="E:\\desk\\日志"
+      for (dayFlag <- (diffDay to -1)) { //按天数循环
+      val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(dayFlag, 2)
+      //val realPath="E:\\desk\\日志_2019-03-20"
       val file: RDD[String] = sc.textFile(realPath, 1)
       val dictRdd = sc.textFile(dict).collect()
       val dictBrod = sc.broadcast(dictRdd).value
@@ -49,23 +48,13 @@ object BuryMainFunction {
       //清洗去掉不规则字符
       val allData = filterBlank.map(BuryCleanCommon.cleanCommonFunction).filter(_.size() > 0)
       val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
-      var allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
-      allDataOneRdd = allDataOneRdd.filter(line => {
-        val timeStr = BuryCleanCommon.getDayTimeByTime(line)
-        val str = timeStr.substring(0, 8)
-        if (str == "20190308") {
-          true
-        } else {
-          false
-        }
-      })
+      val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
       val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
-
       //老规则数据清洗入库
-      oldVersionCleanInsert(oldDataOneRdd, hc, diffDay)
+      oldVersionCleanInsert(oldDataOneRdd, hc, dayFlag)
       //新规则数据+老规则数据清洗入库
-      newVersionCleanInsert(allDataOneRdd, hc, diffDay, dictBrod)
-      // }
+      newVersionCleanInsert(allDataOneRdd, hc, dayFlag, dictBrod)
+       }
       sc.stop()
     } catch {
       case e: Throwable => MailUtil.sendMail("spark日志清洗调度", "清洗日志失败"); e.printStackTrace()

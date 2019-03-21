@@ -1,24 +1,15 @@
 package sparkRealTime.buryLogRealTimeForCrm
 
 import java.util
-import java.util.Date
 
 import bean.stockCustom.{CustomLine, StockBean}
-import com.alibaba.fastjson.JSON
-import com.alibaba.fastjson.serializer.SerializerFeature
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.streaming.kafka.HasOffsetRanges
-import rabbitCode.RpcForUserLineClient
 import scalaUtil.HttpPostUtil
-import scalikejdbc.{NamedDB, SQL}
 import sparkAction.BuryLogin
 import sparkAction.buryCleanUtil.BuryCleanCommon
-
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-
 /**
   * ClassName RealTimeCrmLineTimeIp
   * Description TODO
@@ -26,16 +17,17 @@ import scala.collection.mutable.ListBuffer
   * Date 2019/3/13 14:50
   **/
 object RealTimeCrmLineTimeIp {
-  def doRealTimeCrmLineTimeIp(oneRdd: RDD[(String, String)], hc: HiveContext, sc: SparkContext): Unit = {
-    val dataFrame = hc.sql("select user_id,last_time from wangyadong.in_user_info")
-    val inUserRdd = dataFrame.rdd
-    val userIdLastTime = inUserRdd.map(one => {
-      val userId = one.getString(0)
-      val lastTime = one.getString(1)
-      (userId, lastTime)
-    })
-    val uLMap = userIdLastTime.collect().toMap
-    val broadcast = sc.broadcast(uLMap).value
+  private val url: String = ConfigFactory.load().getString("crm.userStatus.url")
+  def doRealTimeCrmLineTimeIp(oneRdd: RDD[(String, String)], sc: SparkContext): Unit = {
+//    val dataFrame = hc.sql("select user_id,last_time from "+TABLENAME)
+//    val inUserRdd = dataFrame.rdd
+//    val userIdLastTime = inUserRdd.map(one => {
+//      val userId = one.getString(0)
+//      val lastTime = one.getString(1)
+//      (userId, lastTime)
+//    })
+//    val uLMap = userIdLastTime.collect().toMap
+//    val broadcast = sc.broadcast(uLMap).value
     //对当前rdd
     val buryRdd = oneRdd.map(_._2).map(BuryCleanCommon.cleanCommonToListBuryLogin(_))
       .filter(_.size() > 0)
@@ -44,6 +36,8 @@ object RealTimeCrmLineTimeIp {
     val userIdTimeList = buryRdd.map(one => {
       val logStr = one.line
       val ipStr = one.ipStr
+      var sendTime = one.sendTime
+
       val strings = logStr.split("\\|", -1)
       var userId = ""
       var accessTime = ""
@@ -74,17 +68,15 @@ object RealTimeCrmLineTimeIp {
       (userId, List(accessTime, offineTime))
     })
     //map端关联
-    val userIdListOption = userIdTimeList.map(one => {
-      val userId = one._1
-      val listTime = one._2
-      val option = broadcast.get(userId)
-      (userId, listTime, option)
-    })
-    val filterUser = userIdListOption.filter(_._3.isEmpty).filter(!_._1.equals("0")).map(line => (line._1, line._2))
-    //val filterUser = userIdTimeList.leftOuterJoin(userIdLastTime).filter(_._2._2.isEmpty).filter(_._1!="0").map(one => (one._1,one._2._1))
+//    val userIdListOption = userIdTimeList.map(one => {
+//      val userId = one._1
+//      val listTime = one._2
+//      val option = broadcast.get(userId)
+//      (userId, listTime, option)
+//    })
+    val filterUser = userIdTimeList.filter(!_._1.equals("0"))
     val userIdListTime = filterUser.reduceByKey(_ ::: _)
     userIdListTime.map(one => (one._1, one._2.max)).foreachPartition(par => {
-      //val customBeans = new mutable.ListBuffer[CustomLineBean]
       val customLines = new util.ArrayList[CustomLine]()
       par.foreach(line => {
         val userId = line._1
@@ -100,7 +92,7 @@ object RealTimeCrmLineTimeIp {
       })
       val stockBean = new StockBean
       stockBean.setData(customLines)
-      HttpPostUtil.sendMessage(stockBean,"http://localhost:8384/bigdata/test")
+      HttpPostUtil.sendMessage(stockBean,url)
     })
   }
 }

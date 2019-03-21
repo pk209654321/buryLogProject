@@ -9,7 +9,7 @@ import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
 import sparkAction.buryCleanUtil.BuryCleanCommon
-import sparkAction.mapAction.BuryLoginReportNew
+import sparkAction.userLoginReport.BuryLoginReportNew
 
 /**
   * Created by lenovo on 2018/11/16.

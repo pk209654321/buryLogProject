@@ -32,14 +32,14 @@ object BuryCleanCommon {
   //获取老版本的日志
   val getOldVersionFunction = (one: BuryLogin) => {
     val line = one.line
-    val strings = line.split("\\|")
+    val strings = line.split("\\|",-1)
     val i = strings(0).indexOf("=")
     i >= 0
   }
   //获取新版日志
   val getNewVersionFunction = (one: BuryLogin) => {
     val line = one.line
-    val strings = line.split("\\|")
+    val strings = line.split("\\|",-1)
     val i = strings(0).indexOf("=")
     i < 0
   }
