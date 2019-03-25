@@ -5,7 +5,7 @@ import java.util
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
 
@@ -18,7 +18,7 @@ import scala.collection.mutable
 object BuryPhoneClientTableStringIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTablePhoneClientAll")
 
-  def cleanPhoneClientData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) = {
+  def cleanPhoneClientData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int) = {
     /**
     　　* @Description: TODO 清洗出手机客户端的数据insert到hive仓库中
     　　* @param [filterData, hc, dayFlag]
@@ -34,11 +34,12 @@ object BuryPhoneClientTableStringIp {
       Row(line, ipStr)
     })
 
-    val createDataFrame: DataFrame = hc.createDataFrame(map, StructUtil.structCommonStringIp)
-    createDataFrame.registerTempTable("tempTable")
+    val createDataFrame: DataFrame = spark.createDataFrame(map, StructUtil.structCommonStringIp)
+    val reDF = createDataFrame.repartition(1).persist()
+    reDF.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
     val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable"
-    hc.sql(hql)
+    spark.sql(hql)
 
   }
 }

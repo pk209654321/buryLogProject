@@ -1,5 +1,7 @@
 package bean.share;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -8,7 +10,7 @@ import java.util.List;
  * @Author lenovo
  * @Date 2019/2/21 16:41
  **/
-public class ShareMany {
+public class ShareMany implements Serializable {
 
     private Integer bgcolor;
     private String bgUrl;
@@ -30,7 +32,7 @@ public class ShareMany {
     private String link;
     private String name;
     private String randomTitle;
-    private List<String> randomTitleConfigs;
+    private List<String> randomTitleConfigs=new ArrayList<String>();
     private String shareImgUrl;
     private String shareTitle;
     private Integer shareType;

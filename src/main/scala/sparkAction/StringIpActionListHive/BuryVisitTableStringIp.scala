@@ -5,7 +5,7 @@ import java.util
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
 
@@ -17,7 +17,7 @@ import scala.collection.mutable
 object BuryVisitTableStringIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableVisitAll")
 
-  def cleanVisitData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
+  def cleanVisitData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int): Unit = {
     /**
     *　　* @Description: 清洗出股掌柜访问日志insert到hive仓库中
     *　　* @param [filterVisit, hc, diffDay]
@@ -32,9 +32,10 @@ object BuryVisitTableStringIp {
       val sendTime = one.sendTime
       Row(all,ipStr)
     })
-    val frame: DataFrame = hc.createDataFrame(visitRow,StructUtil.structCommonStringIp)
-    frame.registerTempTable("tempTable")
+    val frame: DataFrame = spark.createDataFrame(visitRow,StructUtil.structCommonStringIp)
+    val reDF = frame.repartition(1).persist()
+    reDF.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
-    hc.sql(s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
+    spark.sql(s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 }

@@ -2,11 +2,10 @@ package sparkAction
 
 import java.util
 
-import com.alibaba.fastjson.JSON
 import conf.ConfigurationManager
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.hive.HiveContext
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
 import sparkAction.StringIpActionListHive.{BuryClientWebTableStringIp, BuryPhoneClientTableStringIp, BuryVisitTableStringIp}
@@ -34,7 +33,8 @@ object BuryMainFunction {
       }
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
-      val hc: HiveContext = new HiveContext(sc)
+      //val hiveContext: HiveContext = new HiveContext(sc)
+      val spark = SparkSession.builder().enableHiveSupport().getOrCreate()
       for (dayFlag <- (diffDay to -1)) { //按天数循环
       val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(dayFlag, 2)
       //val realPath="E:\\desk\\日志_2019-03-20"
@@ -51,9 +51,11 @@ object BuryMainFunction {
       val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
       val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
       //老规则数据清洗入库
-      oldVersionCleanInsert(oldDataOneRdd, hc, dayFlag)
+      oldVersionCleanInsert(oldDataOneRdd, spark, dayFlag)
       //新规则数据+老规则数据清洗入库
-      newVersionCleanInsert(allDataOneRdd, hc, dayFlag, dictBrod)
+      newVersionCleanInsert(allDataOneRdd, spark, dayFlag, dictBrod)
+      //测试
+      //testFun2(allDataOneRdd,spark,0,dictBrod)
        }
       sc.stop()
     } catch {
@@ -62,17 +64,17 @@ object BuryMainFunction {
   }
 
   //清洗老日志
-  def oldVersionCleanInsert(oldDataRddList: RDD[BuryLogin], hc: HiveContext, dayFlag: Int): Unit = {
+  def oldVersionCleanInsert(oldDataRddList: RDD[BuryLogin], spark: SparkSession, dayFlag: Int): Unit = {
     //过滤出pc端web日志
     val pcWebRdd = oldDataRddList.filter(BuryCleanCommon.getPcWebLog)
     //清洗出pc端web日志
-    BuryPcWebTableMapIp.cleanPcWebData(pcWebRdd, hc, dayFlag)
+    BuryPcWebTableMapIp.cleanPcWebData(pcWebRdd, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     //过滤出手机web日志
     val filterPhoneWeb = oldDataRddList.filter(BuryCleanCommon.getPhoneWebLog) //手机web
     //清洗出手机web端的日志
-    BuryPhoneWebTableMapIp.cleanPhoneWebData(filterPhoneWeb, hc, dayFlag)
+    BuryPhoneWebTableMapIp.cleanPhoneWebData(filterPhoneWeb, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     //val filterVisit = oldDataRddList.filter(_.logType == 1) //过滤出访问日志Data
@@ -90,7 +92,7 @@ object BuryMainFunction {
     //过滤出股掌柜pc客户端行为数据
     val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
-    BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)
+    BuryPcClientTableMapIp.cleanPcClientData(pcClient, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
     //过滤出手机客户端内嵌网页端行为日志
     //val filterWeb = filterAction.filter(_.source==3)
@@ -99,7 +101,7 @@ object BuryMainFunction {
   }
 
   //新+旧(日志)一起清洗
-  def newVersionCleanInsert(DataRddList: RDD[BuryLogin], hc: HiveContext, dayFlag: Int, dictBrod: Array[String]) = {
+  def newVersionCleanInsert(DataRddList: RDD[BuryLogin], spark: SparkSession, dayFlag: Int, dictBrod: Array[String]) = {
     //过滤出pc端web日志
     //val pcWebRdd = DataRddList.filter(BuryCleanCommon.getPcWebLog)
     //清洗出pc端web日志
@@ -114,14 +116,14 @@ object BuryMainFunction {
 
     val filterVisit = DataRddList.filter(_.logType == 1) //过滤出访问日志Data
     //清洗出股掌柜手机客户端访问日志数据
-    BuryVisitTableStringIp.cleanVisitData(filterVisit, hc, dayFlag)
+    BuryVisitTableStringIp.cleanVisitData(filterVisit, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     val filterAction = DataRddList.filter(_.logType == 2) //过滤出行为日志Data
     //过滤出客户端行为日志
     val filterClient = filterAction.filter(BuryCleanCommon.getPhoneClientActionLog)
     //清洗出股掌柜手机客户端行为数据
-    BuryPhoneClientTableStringIp.cleanPhoneClientData(filterClient, hc, dayFlag)
+    BuryPhoneClientTableStringIp.cleanPhoneClientData(filterClient, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
 
     //val pcClient = filterAction.filter(_.source == 4)
@@ -131,7 +133,13 @@ object BuryMainFunction {
     //过滤出手机客户端内嵌网页端行为日志
     val filterWeb = filterAction.filter(_.source == 3)
     //清洗股掌柜手机客户端内嵌网页行为数据
-    BuryClientWebTableStringIp.cleanClientWebData(filterWeb, hc, dayFlag, dictBrod)
+    BuryClientWebTableStringIp.cleanClientWebData(filterWeb, spark, dayFlag, dictBrod)
+  }
+
+  def testFun2(DataRddList: RDD[BuryLogin],  spark: SparkSession, dayFlag: Int, dictBrod: Array[String]): Unit ={
+    val filterAction = DataRddList.filter(_.logType == 2) //过滤出行为日志Data
+    val filterWeb = filterAction.filter(_.source == 3)
+    BuryClientWebTableStringIp.cleanClientWebData2(filterWeb, spark, dayFlag, dictBrod)
   }
 }
 

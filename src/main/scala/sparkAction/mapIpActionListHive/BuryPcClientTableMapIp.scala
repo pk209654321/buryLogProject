@@ -6,7 +6,7 @@ import bean.StockShopClient
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
 
@@ -19,7 +19,7 @@ import scala.collection.mutable
 object BuryPcClientTableMapIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTablePcClient")
 
-  def cleanPcClientData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) = {
+  def cleanPcClientData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int) = {
     /**
       * 　　* @Description: 清洗出 PC 客户端的数据insert到hive仓库中
       * 　　* @param [filterClient, hc, dayFlag]
@@ -50,11 +50,12 @@ object BuryPcClientTableMapIp {
       Row(hashMap, ipStr)
     })
 
-    val createDataFrame: DataFrame = hc.createDataFrame(map, StructUtil.structCommonMapIp)
-    createDataFrame.registerTempTable("StockShopPcClientMapIp")
+    val createDataFrame: DataFrame = spark.createDataFrame(map, StructUtil.structCommonMapIp)
+    val reDF = createDataFrame.repartition(1).persist()
+    reDF.createOrReplaceTempView("StockShopPcClientMapIp")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
     val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPcClientMapIp"
-    hc.sql(hql)
+    spark.sql(hql)
 
   }
 }

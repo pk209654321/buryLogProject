@@ -6,7 +6,7 @@ import bean.StockShopClient
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
 
@@ -18,7 +18,7 @@ import scala.collection.mutable
   */
 object BuryPhoneWebTableMapIp {
    private val TABLE: String = ConfigurationManager.getProperty("actionTablePhoneWeb")
-  def cleanPhoneWebData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) ={
+  def cleanPhoneWebData(filterData: RDD[BuryLogin],spark: SparkSession, dayFlag: Int) ={
     /**
     *　　* @Description: TODO 清洗出手机浏览器端的日志
     *　　* @param [filterClient, hc, dayFlag]
@@ -46,11 +46,12 @@ object BuryPhoneWebTableMapIp {
       Row(hashMap,ipStr)
     })
 
-    val createDataFrame: DataFrame = hc.createDataFrame(map,StructUtil.structCommonMapIp)
-    createDataFrame.registerTempTable("StockShopPhoneWebMap")
+    val createDataFrame: DataFrame = spark.createDataFrame(map,StructUtil.structCommonMapIp)
+    val reDF = createDataFrame.repartition(1).persist()
+    reDF.createOrReplaceTempView("StockShopPhoneWebMap")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
     val hql= s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPhoneWebMap"
-    hc.sql(hql)
+    spark.sql(hql)
 
   }
 }

@@ -6,7 +6,7 @@ import bean.StockShopClient
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
 
@@ -19,7 +19,7 @@ import scala.collection.mutable
 object BuryPcWebTableMapIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTablePcWeb")
 
-  def cleanPcWebData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) = {
+  def cleanPcWebData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int) = {
     /**
       * 　　* @Description: 清洗出 PC web端的数据insert到hive仓库中
       * 　　* @param [filterClient, hc, dayFlag]
@@ -49,11 +49,12 @@ object BuryPcWebTableMapIp {
       })
       Row(hashMap, ipStr)
     })
-    val createDataFrame: DataFrame = hc.createDataFrame(value, StructUtil.structCommonMapIp)
-    createDataFrame.registerTempTable("StockShopPcWebMapIp")
+    val createDataFrame: DataFrame = spark.createDataFrame(value, StructUtil.structCommonMapIp)
+    val reDF = createDataFrame.repartition(1).persist()
+    reDF.createOrReplaceTempView("StockShopPcWebMapIp")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
     val hql = s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPcWebMapIp"
-    hc.sql(hql)
+    spark.sql(hql)
 
   }
 }

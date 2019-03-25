@@ -6,10 +6,12 @@ import bean.share.ShareMany
 import bean.{PortGroupInfo, PortfolioBean}
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.PortfolioStr
+
+import scala.collection.mutable
 
 /**
   * ClassName PortfolioHiveInsertObject
@@ -22,25 +24,48 @@ object PortfolioProSecInfoHiveInsertObject {
   private val TABLE_MANY: String = ConfigurationManager.getProperty("portfolioTableTestMany")
   private val TABLE_GROUP: String = ConfigurationManager.getProperty("portfolioTableTestGroup")
   private val TABLE_SHARE: String = ConfigurationManager.getProperty("portfolioTableTestShare")
-  def insertPortfolioToHive(portData:RDD[PortfolioStr],hc: HiveContext,dayFlag:Int): Unit ={
-   val portRow= portData.map(line => {
-      Row(line.sKey,line.sValue,line.updatetime)
+
+  def insertPortfolioToHive(portData: RDD[PortfolioStr], spark: SparkSession, dayFlag: Int): Unit = {
+    val portRow = portData.map(line => {
+      Row(line.sKey, line.sValue, line.updatetime)
     })
-    val createDataFrame = hc.createDataFrame(portRow,StructUtil.structPortfolio)
-    createDataFrame.registerTempTable("tempTable")
-    val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
-    hc.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
+    val two = dayFlag - 1
+    val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortfolio)
+    createDataFrame.createOrReplaceTempView("tempTable")
+    val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
+    val sqlStr =
+      s"""
+         |
+         | select
+         |   a.sKey,
+         |   a.sValue,
+         |   a.updatetime
+         | from ${TABLE} a
+         | left join  tempTable b
+         | on a.sKey=b.sKey
+         | where a.hp_stat_date=date_add(current_date(),${two})
+         | and b.sValue is null
+         |
+         | UNION ALL
+         |
+         | select * from tempTable
+         |
+      """.stripMargin
+    spark.sql(sqlStr).repartition(1).createOrReplaceTempView("tempTable2")
+    spark.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable2")
+    //spark.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 
-  def insertPortfolioManyToHive( many: RDD[PortfolioBean],hc: HiveContext,dayFlag:Int): Unit ={
+  def insertPortfolioManyToHive(many: RDD[PortfolioBean], spark: SparkSession, dayFlag: Int): Unit = {
     val portRow = many.map(line => {
-      var broadCastTime = line.getvBroadcastTime()
-      var strategyId = line.getvStrategyId()
-      if(broadCastTime!=null&&broadCastTime.size()==0){
-        broadCastTime=null
+      import scala.collection.JavaConverters._
+      var broadCastTime = line.getvBroadcastTime().asScala
+      var strategyId = line.getvStrategyId().asScala
+      if (broadCastTime.isEmpty) {
+        broadCastTime = null
       }
-      if(strategyId!=null&&strategyId.size()==0){
-        strategyId=null
+      if (strategyId.isEmpty) {
+        strategyId = null
       }
       Row(
         line.getbRecvAnnounce(),
@@ -71,14 +96,59 @@ object PortfolioProSecInfoHiveInsertObject {
         line.getUpdateTime
       )
     })
-    val createDataFrame = hc.createDataFrame(portRow,StructUtil.structPortfolioProSecInfo)
-    createDataFrame.registerTempTable("tempTable")
-    val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
-    hc.sql(s"insert overwrite  table ${TABLE_MANY} partition(hp_stat_date='${timeStr}') select * from tempTable")
+    val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortfolioProSecInfo)
+    createDataFrame.createOrReplaceTempView("tempTable")
+    val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
+    val two = dayFlag - 1
+    val sqlStr =
+      s"""
+         | select
+         |   a.bRecvAnnounce,
+         |   a.bRecvResearch,
+         |   a.fChipHighPrice,
+         |   a.fChipLowPrice,
+         |   a.fDecreasesPer,
+         |   a.fHighPrice,
+         |   a.fIncreasePer,
+         |   a.fLowPrice,
+         |   a.fMainChipHighPrice,
+         |   a.fMainChipLowPrice,
+         |   a.iCreateTime,
+         |   a.iUpdateTime,
+         |   a.iVersion,
+         |   a.isAiAlert,
+         |   a.isDel,
+         |   a.isDKAlert,
+         |   a.sDtSecCode,
+         |   a.isHold,
+         |   a.sKey,
+         |   a.sName,
+         |   a.stCommentInfo_iCreateTime,
+         |   a.stCommentInfo_iUpdateTime,
+         |   a.stCommentInfo_sComment,
+         |   a.vBroadcastTime,
+         |   a.vStrategyId,
+         |   a.updateTime
+         |
+         |   from ${TABLE_MANY} a
+         |   left join  tempTable b
+         |   on a.sKey=b.sKey
+         |   where a.hp_stat_date=date_add(current_date(),${two})
+         |   and b.updateTime is null
+         |
+         |    UNION ALL
+         |
+         | select * from tempTable
+         |
+      """.stripMargin
+
+    spark.sql(sqlStr).repartition(1).createOrReplaceTempView("tempTable2")
+    spark.sql(s"insert overwrite  table ${TABLE_MANY} partition(hp_stat_date='${timeStr}') select * from tempTable2")
+    //spark.sql(s"insert overwrite  table ${TABLE_MANY} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 
-  def insertPortfolioToHiveGroupInfo(portData:RDD[PortGroupInfo],hc: HiveContext,dayFlag:Int): Unit ={
-    val portRow= portData.map(line => {
+  def insertPortfolioToHiveGroupInfo(portData: RDD[PortGroupInfo], spark: SparkSession, dayFlag: Int): Unit = {
+    val portRow = portData.map(line => {
       Row(
         line.getGi_iCreateTime,
         line.getGi_isDel,
@@ -92,14 +162,46 @@ object PortfolioProSecInfoHiveInsertObject {
         line.getUpdateTime
       )
     })
-    val createDataFrame = hc.createDataFrame(portRow,StructUtil.structPortGroupInfo)
-    createDataFrame.registerTempTable("tempTable")
-    val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
-    hc.sql(s"insert overwrite  table ${TABLE_GROUP} partition(hp_stat_date='${timeStr}') select * from tempTable")
+    val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortGroupInfo)
+    createDataFrame.createOrReplaceTempView("tempTable")
+    val two = dayFlag - 1
+    val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
+    val sqlStr =
+      s"""
+         | select
+         |   a.gi_iCreateTime,
+         |   a.gi_isDel,
+         |   a.gi_iUpdateTime,
+         |   a.gi_sGroupName,
+         |   a.gs_isDel,
+         |   a.gs_iUpdateTime,
+         |   a.gs_sDtSecCode,
+         |   a.iVersion,
+         |   a.sKey,
+         |   a.updateTime
+         | from ${TABLE_GROUP} a
+         | left join  tempTable b
+         | on a.sKey=b.sKey
+         | where a.hp_stat_date=date_add(current_date(),${two})
+         | and b.updateTime is null
+         |
+         | UNION ALL
+         |
+         | select * from tempTable
+         |
+      """.stripMargin
+    spark.sql(sqlStr).repartition(1).createOrReplaceTempView("tempTable2")
+    spark.sql(s"insert overwrite  table ${TABLE_GROUP} partition(hp_stat_date='${timeStr}') select * from tempTable2")
+    //spark.sql(s"insert overwrite  table ${TABLE_GROUP} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 
-  def insertShareControl( shareRdds: RDD[ShareMany],hc: HiveContext)={
+  def insertShareControl(shareRdds: RDD[ShareMany], spark: SparkSession) = {
     val shareRow = shareRdds.map(line => {
+      import scala.collection.JavaConverters._
+      var titleList = line.getRandomTitleConfigs().asScala
+      if (titleList.isEmpty) {
+        titleList = null
+      }
       Row(
         line.getBgcolor,
         line.getBgUrl,
@@ -117,7 +219,7 @@ object PortfolioProSecInfoHiveInsertObject {
         line.getPerson,
         line.getPosterChar,
         line.getRandomTitle,
-        line.getRandomTitleConfigs,
+        titleList,
         line.getSceneCode,
         line.getShareImgUrl,
         line.getShareTitle,
@@ -127,9 +229,10 @@ object PortfolioProSecInfoHiveInsertObject {
         line.getUpShareViewUrl
       )
     })
-    val createDataFrame = hc.createDataFrame(shareRow,StructUtil.structShareMany)
-    createDataFrame.registerTempTable("tempTable")
-    hc.sql(s"insert overwrite  table ${TABLE_SHARE} select * from tempTable")
+    val createDataFrame = spark.createDataFrame(shareRow, StructUtil.structShareMany)
+    val reDF = createDataFrame.repartition(1).persist()
+    reDF.createOrReplaceTempView("tempTable")
+    spark.sql(s"insert overwrite  table ${TABLE_SHARE} select * from tempTable")
   }
 
 

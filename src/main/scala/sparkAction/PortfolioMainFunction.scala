@@ -8,8 +8,8 @@ import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
 import com.dengtacj.bec.{GroupInfo, ProSecInfo, ProSecInfoList}
 import com.qq.tars.protocol.tars.BaseDecodeStream
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
@@ -27,7 +27,8 @@ import scala.collection.{JavaConversions, mutable}
 object PortfolioMainFunction {
   def main(args: Array[String]): Unit = {
     try {
-      val dataMysql = getMysqlData()
+      val diffDay: Int = args(0).toInt
+      val dataMysql = getMysqlData(diffDay)
       //用户自选股原始信息
       val portfolioStrs = getPortfolioFromMysql(dataMysql)
       val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
@@ -40,43 +41,72 @@ object PortfolioMainFunction {
       //========================================================================================
       //获取分享控件
       val shareManies = getShare.flatMap(_.toSeq)
-      val diffDay: Int = args(0).toInt
+
       val local: Boolean = LocalOrLine.judgeLocal()
       var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
-      sparkConf.set("spark.akka.frameSize","512")
-      sparkConf.set("spark.serializer","org.apache.spark.serializer.KryoSerializer")
+      sparkConf.set("spark.akka.frameSize", "256")
+      sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
       if (local) {
         System.setProperty("HADOOP_USER_NAME", "wangyd")
         sparkConf = sparkConf.setMaster("local[*]")
       }
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
-      val hc: HiveContext = new HiveContext(sc)
-      val portfolias = sc.parallelize(portfolioStrs ,1)
-     val many = sc.parallelize(portfolioBeans,1)
-      val groups = sc.parallelize(portGroupInfoes,1)
-     val shareRdds = sc.parallelize(shareManies,1)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias,hc,diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many,hc,diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups,hc,diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds,hc)
+      val spark = SparkSession.builder().config("spark.debug.maxToStringFields", "100")
+        .enableHiveSupport()
+        .getOrCreate()
+      //val hc: HiveContext = new HiveContext(sc)
+      val portfolias = sc.parallelize(portfolioStrs, 200)
+      val many = sc.parallelize(portfolioBeans, 200)
+      val groups = sc.parallelize(portGroupInfoes, 200)
+      val shareRdds = sc.parallelize(shareManies, 1)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
+      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
       sc.stop()
     } catch {
-      case e: Throwable => e.printStackTrace();MailUtil.sendMail("spark用户自选股解析入库|分享控件", "失败")
+      case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件", "失败")
     }
   }
 
   //拉取masql 中的数据
 
-  def getMysqlData()={
+  def getMysqlData(diffDay:Int) = {
     DBs.setupAll()
     val peoples = NamedDB('mysql).readOnly { implicit session =>
-      SQL("select * from t_portfolio").map(rs => Portfolio(rs.string("sKey"),rs.bytes("sValue"),rs.string("updatetime"))).list().apply()
+      SQL(s"select * from t_portfolio where ADDDATE(CURDATE(),INTERVAL  ${diffDay} DAY)=date(updatetime)").map(rs => Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))).list().apply()
     }
     peoples
   }
 
-  def getShare()= {
+  def getMysqlDataAll(diffDay:Int) = {
+    DBs.setupAll()
+    val peoples = NamedDB('mysql).readOnly { implicit session =>
+      SQL(s"select * from t_portfolio").map(rs => Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))).list().apply()
+    }
+    peoples
+  }
+
+  def getMysqlDataNew(diffDay:Int) = {
+    DBs.setupAll()
+    val peoples = NamedDB('mysql).readOnly { implicit session =>
+      SQL(s"select * from t_portfolio").map(rs => {
+        val keyStr = rs.string("sKey")
+        val valueStr = rs.bytes("sValue")
+        val timeStr = rs.string("updatetime")
+        val stream = new BaseDecodeStream(valueStr)
+        val list = new ProSecInfoList()
+        list.readFrom(stream)
+        val sValue = JSON.toJSONString(list, SerializerFeature.WriteMapNullValue)
+        //Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))
+        PortfolioStr(keyStr,sValue,timeStr)
+      }).list().apply()
+    }
+    peoples
+  }
+
+  def getShare() = {
     DBs.setupAll()
     val shareControls = NamedDB('share).readOnly { implicit session =>
       SQL("select * from scene_share_config").map(rs => ShareControl(rs.int("scene_code"), rs.string("share_page_info"))
@@ -86,11 +116,11 @@ object PortfolioMainFunction {
 
       val scene_code = line.scene_code
       val share_page_info = line.share_page_info
-      var sharePageInfo=new SharePageInfo
+      var sharePageInfo = new SharePageInfo
       try {
-         sharePageInfo = JSON.parseObject(share_page_info, classOf[SharePageInfo])
+        sharePageInfo = JSON.parseObject(share_page_info, classOf[SharePageInfo])
       } catch {
-        case e:Throwable => println("scene_code:"+scene_code+"----------------------------------"+share_page_info)
+        case e: Throwable => println("scene_code:" + scene_code + "----------------------------------" + share_page_info)
       }
 
       val list = sharePageInfo.getChannelList
@@ -99,51 +129,51 @@ object PortfolioMainFunction {
       val bgcolor: Integer = sharePageInfo.getBgcolor
       val bgUrl: String = sharePageInfo.getBgUrl match {
         case "" => null
-        case _=> sharePageInfo.getBgUrl
+        case _ => sharePageInfo.getBgUrl
       }
       val downShareViewUrl: String = sharePageInfo.getDownShareViewUrl match {
-        case "" =>null
-        case _=>sharePageInfo.getDownShareViewUrl
+        case "" => null
+        case _ => sharePageInfo.getDownShareViewUrl
       }
       var middleBLock: BlockInfo = sharePageInfo.getMiddleBLock
-      if(middleBLock!=null){
+      if (middleBLock != null) {
         shareMany.setMb_content(middleBLock.getContent match {
           case "" => null
           case _ => middleBLock.getContent
         })
         shareMany.setMb_contentLink(middleBLock.getContentLink match {
           case "" => null
-          case _=> middleBLock.getContentLink
+          case _ => middleBLock.getContentLink
         })
         shareMany.setMb_textColor(middleBLock.getTextColor match {
           case "" => null
-          case _=> middleBLock.getTextColor
+          case _ => middleBLock.getTextColor
         })
         shareMany.setMb_type(middleBLock.getType match {
           case "" => null
-          case _=> middleBLock.getType
+          case _ => middleBLock.getType
         })
       }
       val middleChar: String = sharePageInfo.getMiddleChar match {
         case "" => null
-        case _=> sharePageInfo.getMiddleChar
+        case _ => sharePageInfo.getMiddleChar
       }
       val posterChar: String = sharePageInfo.getPosterChar match {
         case "" => null
-        case _=> sharePageInfo.getPosterChar
+        case _ => sharePageInfo.getPosterChar
       }
       val sceneCode: Integer = sharePageInfo.getSceneCode
       val topBlockLink: String = sharePageInfo.getTopBlockLink match {
-        case "" =>null
-        case _=> sharePageInfo.getTopBlockLink
+        case "" => null
+        case _ => sharePageInfo.getTopBlockLink
       }
       val topBlockUrl: String = sharePageInfo.getTopBlockUrl match {
-        case ""=> null
-        case _=>sharePageInfo.getTopBlockUrl
+        case "" => null
+        case _ => sharePageInfo.getTopBlockUrl
       }
       val upShareViewUrl: String = sharePageInfo.getUpShareViewUrl match {
-        case "" =>null
-        case _=> sharePageInfo.getUpShareViewUrl
+        case "" => null
+        case _ => sharePageInfo.getUpShareViewUrl
       }
       //pageInfo中的详情
       shareMany.setBgcolor(bgcolor)
@@ -155,44 +185,46 @@ object PortfolioMainFunction {
       shareMany.setPosterChar(posterChar)
       shareMany.setSceneCode(sceneCode)
       shareMany.setUpShareViewUrl(upShareViewUrl)
-      if(list!=null&&list.size()>0){
+      if (list != null && list.size() > 0) {
         for (i <- 0 until (list.size())) {
           //shareChannelInfo详情
           var shareMany2 = new ShareMany
           val shareChannelInfo = list.get(i)
           val code: Integer = shareChannelInfo.getCode
           val desc: String = shareChannelInfo.getDesc match {
-            case "" =>null
-            case _=> shareChannelInfo.getDesc
+            case "" => null
+            case _ => shareChannelInfo.getDesc
           }
           val person: Integer = shareChannelInfo.getIsFirstPerson
           val permission: Integer = shareChannelInfo.getIsOutsidePermission
           val link: String = shareChannelInfo.getLink match {
             case "" => null
-            case _=> shareChannelInfo.getLink
+            case _ => shareChannelInfo.getLink
           }
           val name: String = shareChannelInfo.getName match {
-            case "" =>null
-            case _=>shareChannelInfo.getName
+            case "" => null
+            case _ => shareChannelInfo.getName
           }
           val randomTitle: String = shareChannelInfo.getRandomTitle match {
             case "" => null
-            case _=>shareChannelInfo.getRandomTitle
+            case _ => shareChannelInfo.getRandomTitle
           }
           var randomTitleConfigs: util.List[String] = shareChannelInfo.getRandomTitleConfigs
-          if(randomTitleConfigs!=null&&(randomTitleConfigs.size()==0||randomTitleConfigs.get(0).equals(""))){
-            randomTitleConfigs=null
+          //          if (randomTitleConfigs != null && (randomTitleConfigs.size() == 0 || randomTitleConfigs.get(0).equals(""))) {
+          //            randomTitleConfigs = null
+          //          }
+          if (randomTitleConfigs == null) {
+            randomTitleConfigs = new util.ArrayList[String]()
           }
           val shareImgUrl: String = shareChannelInfo.getShareImgUrl match {
-            case "" =>null
-            case _=>shareChannelInfo.getShareImgUrl
+            case "" => null
+            case _ => shareChannelInfo.getShareImgUrl
           }
           val shareTitle: String = shareChannelInfo.getShareTitle match {
-            case ""=> null
-            case _ =>shareChannelInfo.getShareTitle
+            case "" => null
+            case _ => shareChannelInfo.getShareTitle
           }
           val shareType: Integer = shareChannelInfo.getShareType
-
 
           shareMany2.setBgcolor(bgcolor)
           shareMany2.setBgUrl(bgUrl)
@@ -217,14 +249,15 @@ object PortfolioMainFunction {
           shareMany2.setShareType(shareType)
           array += (shareMany2)
         }
-      }else{
+      } else {
         array.+=(shareMany)
       }
       array
     })
   }
-  def getGroupInfoFromMysql(dataMysql: scala.List[Portfolio])={
-    dataMysql.map(one=> {
+
+  def getGroupInfoFromMysql(dataMysql: scala.List[Portfolio]) = {
+    dataMysql.map(one => {
       val key = one.sKey
       val value = one.sValue
       val updatetime = one.updatetime
@@ -236,8 +269,8 @@ object PortfolioMainFunction {
       val gip = groupInfo.toArray()
       val array = new mutable.ArrayBuffer[PortGroupInfo]()
       val groupInfoes = JavaConversions.asScalaBuffer(groupInfo)
-      if(groupInfoes!=null&&groupInfoes.size>0){
-        groupInfo.foreach(gi=> {
+      if (groupInfoes != null && groupInfoes.size > 0) {
+        groupInfo.foreach(gi => {
           val portGroupInfo = new PortGroupInfo
           val gi_iCreateTime = gi.getICreateTime
           val gi_iUpdateTime = gi.getIUpdateTime
@@ -252,12 +285,13 @@ object PortfolioMainFunction {
           portGroupInfo.setiVersion(iVersion)
           portGroupInfo.setsKey(key)
           portGroupInfo.setUpdateTime(updatetime)
-          if(groupSecInfoes!=null&&groupSecInfoes.size>0){
-            groupSecInfoes.foreach(gsInfo=> {
+          if (groupSecInfoes != null && groupSecInfoes.size > 0) {
+            groupSecInfoes.foreach(gsInfo => {
               var portGroupInfo2 = new PortGroupInfo
               val gs_del = gsInfo.isDel
               val gs_iUpdateTime = gsInfo.getIUpdateTime
               val gs_sDtSecCode = gsInfo.getSDtSecCode
+
               portGroupInfo2.setGi_iCreateTime(gi_iCreateTime)
               portGroupInfo2.setGi_isDel(gi_del)
               portGroupInfo2.setGi_iUpdateTime(gi_iUpdateTime)
@@ -265,20 +299,23 @@ object PortfolioMainFunction {
               portGroupInfo2.setiVersion(iVersion)
               portGroupInfo2.setsKey(key)
               portGroupInfo2.setUpdateTime(updatetime)
+
+
               portGroupInfo2.setGs_isDel(gs_del)
               portGroupInfo2.setGs_iUpdateTime(gs_iUpdateTime)
               portGroupInfo2.setGs_sDtSecCode(gs_sDtSecCode)
               array.+=(portGroupInfo2)
             })
-          }else{
-              array+=(portGroupInfo)
-            }
+          } else {
+            array += (portGroupInfo)
+          }
         })
       }
       array
     })
   }
-  def getPortfolioFromMysql(dataMysql: scala.List[Portfolio]):List[PortfolioStr] ={
+
+  def getPortfolioFromMysql(dataMysql: scala.List[Portfolio]): List[PortfolioStr] = {
     val portfolioStrs = dataMysql.map(one => {
       val value = one.sValue
       val stream = new BaseDecodeStream(value)
@@ -290,7 +327,7 @@ object PortfolioMainFunction {
     portfolioStrs
   }
 
-  def getManyFieldPortfolio(dataMysql: scala.List[Portfolio])={
+  def getManyFieldPortfolio(dataMysql: scala.List[Portfolio]) = {
     val listTup = dataMysql.map(one => {
       val value = one.sValue
       val stream = new BaseDecodeStream(value)
@@ -303,7 +340,7 @@ object PortfolioMainFunction {
       portfolioBean.setsKey(one.sKey)
       portfolioBean.setUpdateTime(one.updatetime)
       portfolioBean.setiVersion(iVersion)
-      if(vProSecInfo!=null&&vProSecInfo.size()>0){
+      if (vProSecInfo != null && vProSecInfo.size() > 0) {
         for (i <- 0 until (vProSecInfo.size())) {
           var portfolioBean2 = new PortfolioBean
           val info = vProSecInfo.get(i)
@@ -313,9 +350,18 @@ object PortfolioMainFunction {
             case "" => null
             case _ => info.getStCommentInfo.getSComment
           }
+          var vBroadcastTime = info.getVBroadcastTime
+          var vStrategyId = info.getVStrategyId
+          if (vBroadcastTime == null) {
+            vBroadcastTime = new util.ArrayList[Integer]()
+          }
+          if (vStrategyId == null) {
+            vStrategyId = new util.ArrayList[Integer]()
+          }
           portfolioBean2.setsKey(one.sKey)
           portfolioBean2.setUpdateTime(one.updatetime)
           portfolioBean2.setiVersion(iVersion)
+
           portfolioBean2.setbRecvAnnounce(info.getBRecvAnnounce)
           portfolioBean2.setbRecvResearch(info.getBRecvResearch)
           portfolioBean2.setfChipHighPrice(info.getFChipHighPrice)
@@ -337,11 +383,12 @@ object PortfolioMainFunction {
           portfolioBean2.setStCommentInfo_iCreateTime(iCreateTime)
           portfolioBean2.setStCommentInfo_iUpdateTime(iUpdateTime)
           portfolioBean2.setStCommentInfo_sComment(sComment)
-          portfolioBean2.setvBroadcastTime(info.getVBroadcastTime)
-          portfolioBean2.setvStrategyId(info.getVStrategyId)
+          portfolioBean2.setvBroadcastTime(vBroadcastTime)
+          portfolioBean2.setvStrategyId(vStrategyId)
           array.+=(portfolioBean2)
+
         }
-      }else{
+      } else {
         array.+=(portfolioBean)
       }
       array
@@ -350,6 +397,8 @@ object PortfolioMainFunction {
   }
 }
 
-case class Portfolio (var sKey:String,var sValue:Array[Byte],var updatetime:String)
-case class PortfolioStr(var sKey:String,var sValue:String,var updatetime:String)
-case class ShareControl(scene_code:Int,share_page_info:String)
+case class Portfolio(var sKey: String, var sValue: Array[Byte], var updatetime: String)
+
+case class PortfolioStr(var sKey: String, var sValue: String, var updatetime: String)
+
+case class ShareControl(scene_code: Int, share_page_info: String)
