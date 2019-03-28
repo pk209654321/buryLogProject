@@ -2,13 +2,27 @@ package scalaUtil;
 /**
  * Created by lenovo on 2018/10/26.
  */
+import bean.crmUserInfo.CustomLine;
+import bean.crmUserInfo.StockBean;
 import com.alibaba.fastjson.JSON;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 
 /**
  * @ClassName HttpPostUtil
@@ -31,6 +45,8 @@ public class HttpPostUtil {
             urlCon.setUseCaches(false);
             urlCon.setRequestProperty("content-Type", "application/json");
             urlCon.setRequestProperty("charset", "utf-8");
+            urlCon.setRequestProperty("Accept-Language", "en-us,en;q=0.5");
+            urlCon.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT //5.1)AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.46 Safari/535.11");
             urlCon.setRequestProperty("Content-length",
                     String.valueOf(xmlData.length));
             urlCon.setConnectTimeout(30000);
@@ -51,10 +67,7 @@ public class HttpPostUtil {
             e.printStackTrace();
         } finally {
             try {
-                if(out!=null&&instr!=null){
-                    out.close();
                     instr.close();
-                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -64,4 +77,26 @@ public class HttpPostUtil {
         String toJSONString = JSON.toJSONString(t);
         HttpPostUtil.doHttpPost(toJSONString,urlstr);
     }
+
+    public static void main(String[] args) {
+//        ArrayList<CustomLine> customLines = new ArrayList<>();
+//        CustomLine customLine = new CustomLine();
+//        customLine.setLast_line_time(1553564233);
+//        customLine.setUser_id(95988);
+//        CustomLine customLine2 = new CustomLine();
+//        customLine2.setLast_line_time(1553578134);
+//        customLine2.setUser_id(95991);
+//        CustomLine customLine3 = new CustomLine();
+//        customLine3.setLast_line_time(1553564233);
+//        customLine3.setUser_id(96017);
+//        customLines.add(customLine);
+//        customLines.add(customLine2);
+//        customLines.add(customLine3);
+//        StockBean stockBean = new StockBean();
+//
+//        stockBean.setData(customLines);
+//        HttpPostUtil.sendMessage(stockBean,"http://dts.test.gp122.com/api/push-user-online-status");
+    }
+
+
 }

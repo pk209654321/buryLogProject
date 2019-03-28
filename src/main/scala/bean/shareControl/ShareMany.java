@@ -1,4 +1,4 @@
-package bean.share;
+package bean.shareControl;
 
 import java.io.Serializable;
 import java.util.ArrayList;

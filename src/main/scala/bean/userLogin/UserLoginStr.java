@@ -1,4 +1,4 @@
-package bean;/**
+package bean.userLogin;/**
  * Created by lenovo on 2018/10/26.
  */
 

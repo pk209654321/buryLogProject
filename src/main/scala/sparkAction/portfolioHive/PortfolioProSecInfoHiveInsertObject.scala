@@ -2,8 +2,8 @@ package sparkAction.portfolioHive
 
 import java.util
 
-import bean.share.ShareMany
-import bean.{PortGroupInfo, PortfolioBean}
+import bean.shareControl.ShareMany
+import bean.userChoiceStock.{PortGroupInfo, PortfolioBean}
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}

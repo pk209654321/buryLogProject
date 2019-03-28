@@ -1,4 +1,4 @@
-package bean.stockCustom;
+package bean.crmUserInfo;
 
 /**
  * @ClassName CustomLine

@@ -2,8 +2,8 @@ package sparkAction
 
 import java.util
 
-import bean.share.{BlockInfo, ShareMany, SharePageInfo}
-import bean.{PortGroupInfo, PortfolioBean}
+import bean.shareControl.{BlockInfo, ShareMany, SharePageInfo}
+import bean.userChoiceStock.{PortGroupInfo, PortfolioBean}
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
 import com.dengtacj.bec.{GroupInfo, ProSecInfo, ProSecInfoList}

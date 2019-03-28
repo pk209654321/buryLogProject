@@ -1,4 +1,4 @@
-package bean;
+package bean.userChoiceStock;
 
 import java.io.Serializable;
 import java.util.ArrayList;

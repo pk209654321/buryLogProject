@@ -2,7 +2,7 @@ package sparkAction.userLoginReport
 
 import java.util.Random
 
-import bean.{Data, UserLoginStr}
+import bean.userLogin.{Data, UserLoginStr}
 import conf.ConfigurationManager
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD

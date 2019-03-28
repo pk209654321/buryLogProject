@@ -2,7 +2,7 @@ package testBury.beanTest
 
 import java.io.{File, PrintWriter}
 
-import bean.PortfolioBean
+import bean.userChoiceStock.PortfolioBean
 import scalaUtil.DateScalaUtil
 import sparkAction.PortfolioMainFunction.{getGroupInfoFromMysql, getManyFieldPortfolio}
 import sparkAction.{Portfolio, PortfolioMainFunction, PortfolioStr}

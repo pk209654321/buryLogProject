@@ -2,7 +2,6 @@ package hadoopCode.hbaseFormal.ddloperation;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import hadoopCode.hbaseCommon.HBaseTest;
 import hadoopCode.hbaseFormal.util.HBaseUtil;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Result;

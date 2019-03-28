@@ -31,22 +31,22 @@ object BuryCleanCommon {
 
   //获取老版本的日志
   val getOldVersionFunction = (one: BuryLogin) => {
-    val line = one.line
-    val strings = line.split("\\|",-1)
+    val line = one.line+""
+    val strings = line.split("\\|", -1)
     val i = strings(0).indexOf("=")
     i >= 0
   }
   //获取新版日志
   val getNewVersionFunction = (one: BuryLogin) => {
-    val line = one.line
-    val strings = line.split("\\|",-1)
+    val line = one.line + ""
+    val strings = line.split("\\|", -1)
     val i = strings(0).indexOf("=")
     i < 0
   }
 
   //获取PC端web日志
   val getPcWebLog = (one: BuryLogin) => {
-    val line = one.line
+    val line = one.line+""
     val i = line.indexOf("application=browser")
     if (i > 0) {
       true
@@ -56,7 +56,7 @@ object BuryCleanCommon {
   }
   //获取手机web日志
   val getPhoneWebLog = (one: BuryLogin) => {
-    val line = one.line
+    val line = one.line+""
     val i = line.indexOf("application=web")
     if (i >= 0) {
       true
@@ -119,8 +119,8 @@ object BuryCleanCommon {
     var listbury: java.util.List[BuryLogin] = new util.ArrayList[BuryLogin]()
     val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
     try {
-      var bury = ""
-      val jsonAndIp: Array[String] = all.split("&")
+      var bury = "1"
+      //val jsonAndIp: Array[String] = all.split("&")
       val ifList = all.indexOf("[")
       val i = all.lastIndexOf("&")
       val ipTemp = all.substring(i + 1, all.length)
@@ -141,7 +141,7 @@ object BuryCleanCommon {
   }
 
   //根据不同的时间格式转换当前时间
-  def getDayTimeByTime(bury:BuryLogin): String ={
+  def getDayTimeByTime(bury: BuryLogin): String = {
     var time = bury.sendTime
     if (StringUtils.isNumeric(time)) {
       time = DateScalaUtil.tranTimeToString(time, 0)
@@ -150,5 +150,13 @@ object BuryCleanCommon {
       .replaceAll(":", "")
       .replaceAll(" ", "")
       .trim
+  }
+
+  def main(args: Array[String]): Unit = {
+    val a: String = null
+    //val b=a+"1"
+    //println(b)
+    val logins = JSON.parseArray("[]", classOf[BuryLogin])
+    println(logins.size())
   }
 }

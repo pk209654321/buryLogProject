@@ -6,7 +6,6 @@ import java.util.Date
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
 import com.google.gson.Gson
-import hadoopCode.hbaseCommon.HBaseUtilTest
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}

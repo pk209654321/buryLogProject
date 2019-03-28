@@ -1,4 +1,4 @@
-package bean.share;
+package bean.shareControl;
 
 /**
  * 块类型--用于渲染页面

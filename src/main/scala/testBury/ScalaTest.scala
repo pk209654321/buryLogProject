@@ -5,7 +5,6 @@ import com.alibaba.fastjson.serializer.SerializerFeature
 import com.dengtacj.bec.ProSecInfoList
 import com.qq.tars.protocol.tars.BaseDecodeStream
 import com.typesafe.config.ConfigFactory
-import hadoopCode.hbaseCommon.HBaseUtilTest
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.Json

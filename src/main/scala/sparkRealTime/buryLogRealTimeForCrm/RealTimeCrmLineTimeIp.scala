@@ -2,7 +2,7 @@ package sparkRealTime.buryLogRealTimeForCrm
 
 import java.util
 
-import bean.stockCustom.{CustomLine, StockBean}
+import bean.crmUserInfo.{CustomLine, StockBean}
 import com.typesafe.config.ConfigFactory
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -34,38 +34,42 @@ object RealTimeCrmLineTimeIp {
       .flatMap(_.toArray())
       .map(_.asInstanceOf[BuryLogin]).filter(_.logType == 1)
     val userIdTimeList = buryRdd.map(one => {
-      val logStr = one.line
-      val ipStr = one.ipStr
-      var sendTime = one.sendTime
+      try {
+        val logStr = one.line
+        val ipStr = one.ipStr
+        var sendTime = one.sendTime
 
-      val strings = logStr.split("\\|", -1)
-      var userId = ""
-      var accessTime = ""
-      var offineTime = ""
-      if (strings(0).indexOf("=") >= 0) {
-        //老板日志
-        strings.foreach(one => {
-          val kv = one.split("=")
-          var key = ""
-          var value = ""
-          if (kv.length == 2) {
-            key = kv(0).trim
-            value = kv(1).trim
-          }
-          key match {
-            case "user_id" => userId = value
-            case "access_time" => accessTime = value
-            case "offline_time" => offineTime = value
-            case _ =>
-          }
-        })
-      } else {
-        //新版日志
-        userId = strings(0).trim
-        accessTime = strings(2).trim
-        offineTime = strings(3).trim
+        val strings = logStr.split("\\|", -1)
+        var userId = ""
+        var accessTime = ""
+        var offineTime = ""
+        if (strings(0).indexOf("=") >= 0) {
+          //老板日志
+          strings.foreach(one => {
+            val kv = one.split("=")
+            var key = ""
+            var value = ""
+            if (kv.length == 2) {
+              key = kv(0).trim
+              value = kv(1).trim
+            }
+            key match {
+              case "user_id" => userId = value
+              case "access_time" => accessTime = value
+              case "offline_time" => offineTime = value
+              case _ =>
+            }
+          })
+        } else {
+          //新版日志
+          userId = strings(0).trim
+          accessTime = strings(2).trim
+          offineTime = strings(3).trim
+        }
+        (userId, List(accessTime, offineTime))
+      } catch {
+        case e:Exception => e.printStackTrace();("0", List("", ""))
       }
-      (userId, List(accessTime, offineTime))
     })
     //map端关联
 //    val userIdListOption = userIdTimeList.map(one => {
@@ -74,7 +78,7 @@ object RealTimeCrmLineTimeIp {
 //      val option = broadcast.get(userId)
 //      (userId, listTime, option)
 //    })
-    val filterUser = userIdTimeList.filter(!_._1.equals("0"))
+    val filterUser = userIdTimeList.filter(!_._1.equals("0")).filter(!_._1.equals(""))
     val userIdListTime = filterUser.reduceByKey(_ ::: _)
     userIdListTime.map(one => (one._1, one._2.max)).foreachPartition(par => {
       val customLines = new util.ArrayList[CustomLine]()

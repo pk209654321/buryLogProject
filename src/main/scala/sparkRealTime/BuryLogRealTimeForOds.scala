@@ -3,12 +3,11 @@ package sparkRealTime
 import java.util
 
 import com.typesafe.config.ConfigFactory
-import hadoopCode.sparkRealTime.KafkaCluster
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
-import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils}
+import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaCluster, KafkaUtils}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import scalikejdbc._
 import scalikejdbc.config.DBs

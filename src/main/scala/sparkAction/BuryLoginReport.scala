@@ -1,12 +1,12 @@
 package sparkAction
 
-import bean.{UserLoginStr, Data}
+import bean.userLogin.{Data, UserLoginStr}
 import conf.ConfigurationManager
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
 
 import scala.collection.mutable
-import scalaUtil.{HttpPostUtil, DateScalaUtil}
+import scalaUtil.{DateScalaUtil, HttpPostUtil}
 
 /**
   * Created by lenovo on 2018/11/26.

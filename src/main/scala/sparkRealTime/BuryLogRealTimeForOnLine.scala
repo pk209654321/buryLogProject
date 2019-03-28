@@ -1,11 +1,10 @@
 package sparkRealTime
 
 import com.typesafe.config.ConfigFactory
-import hadoopCode.sparkRealTime.KafkaCluster
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
-import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils}
+import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaCluster, KafkaUtils}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import scalaUtil.LocalOrLine
@@ -39,7 +38,7 @@ object BuryLogRealTimeForOnLine {
       sparkConf.setMaster("local[*]")
     }
     val sc = new SparkContext(sparkConf)
-    val ssc = new StreamingContext(sc, Seconds(10))
+    val ssc = new StreamingContext(sc, Seconds(60))
 
     // 加载配置信息
     DBs.setupAll()

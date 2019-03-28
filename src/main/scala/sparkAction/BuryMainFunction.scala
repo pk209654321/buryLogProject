@@ -46,9 +46,12 @@ object BuryMainFunction {
         StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
       })
       //清洗去掉不规则字符
-      val allData = filterBlank.map(BuryCleanCommon.cleanCommonFunction).filter(_.size() > 0)
+      val allData = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size() > 0)
       val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
-      val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
+      val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).filter(one=> {
+        val line = one.line
+        StringUtils.isNotBlank(line)
+      })
       val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
       //老规则数据清洗入库
       oldVersionCleanInsert(oldDataOneRdd, spark, dayFlag)
