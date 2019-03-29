@@ -146,7 +146,7 @@ object ScalaTest {
 //   println(str.split("\\|",-1).length)
 // }
 
-  def main(args: Array[String]): Unit = {
+  /*def main(args: Array[String]): Unit = {
     var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
     val local: Boolean = LocalOrLine.judgeLocal()
     if (local) {
@@ -159,6 +159,12 @@ object ScalaTest {
     val rdd2 = sc.parallelize(List(("b",1),("c",1),("d",1)))//
     println(rdd1.leftOuterJoin(rdd2).filter(_._2._2.isEmpty).collect().toList)
 
+  }*/
+
+  def main(args: Array[String]): Unit = {
+    val load = ConfigFactory.load()
+    val str = load.getString("crm.userStatus.url")
+    println(str)
   }
 
 }

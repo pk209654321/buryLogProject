@@ -35,8 +35,8 @@ public class PortfolioBean implements Serializable {
     private Integer stCommentInfo_iCreateTime;
     private Integer stCommentInfo_iUpdateTime;
     private String stCommentInfo_sComment;
-    private List<Integer> vBroadcastTime=new ArrayList<>();
-    private List<Integer> vStrategyId=new ArrayList<>();
+    private List<Integer> vBroadcastTime;
+    private List<Integer> vStrategyId;
 
     public List<Integer> getvBroadcastTime() {
         return vBroadcastTime;

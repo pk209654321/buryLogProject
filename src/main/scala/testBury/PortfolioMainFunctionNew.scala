@@ -1,4 +1,4 @@
-package sparkAction
+package testBury
 
 import java.util
 
@@ -13,6 +13,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
+import sparkAction.PortfolioMysqlData.PortfolioMysqlData
 import sparkAction.portfolioHive.PortfolioProSecInfoHiveInsertObject
 
 import scala.collection.JavaConversions._
@@ -24,26 +25,26 @@ import scala.collection.{JavaConversions, mutable}
   * Author lenovo
   * Date 2019/2/12 9:16
   **/
-object PortfolioMainFunction {
+object PortfolioMainFunctionNew {
   def main(args: Array[String]): Unit = {
     try {
+      //获取原始数据
+      val portData = PortfolioMysqlData.getPortfolioData()
+      //获取Json  portfolio
+      val portJson = PortfolioMysqlData.getPortfolioJsonStr(portData)
+      //获取many数据
+      val manyPortfolio = PortfolioMysqlData.getManyPortfolio(portData)
+      val manyPortfolioBeans=manyPortfolio.flatMap(_.toSeq)
+      //获取group数据
+      val groupData = PortfolioMysqlData.getGroupPortfolio(portData)
+      val groupDataBeans = groupData.flatMap(_.toSeq)
+
       val diffDay: Int = args(0).toInt
-      val dataMysql = getMysqlDataAll(diffDay)
-      //用户自选股原始信息
-      val portfolioStrs = getPortfolioFromMysql(dataMysql)
-      val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
-      //用户自选股组信息
-      val groupInfo = getGroupInfoFromMysql(dataMysql)
-      //自选股保存的证券信息
-      val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)
-      //用户自选股组信息
-      val portGroupInfoes = groupInfo.flatMap(_.toSeq)
       //========================================================================================
       //获取分享控件
       val shareManies = getShare.flatMap(_.toSeq)
-
       val local: Boolean = LocalOrLine.judgeLocal()
-      var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
+      var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunctionNew")
       sparkConf.set("spark.akka.frameSize", "256")
       sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
       sparkConf.set("spark.network.timeout","3600")
@@ -57,14 +58,20 @@ object PortfolioMainFunction {
         .enableHiveSupport()
         .getOrCreate()
       //val hc: HiveContext = new HiveContext(sc)
-      val portfolias = sc.parallelize(portfolioStrs, 200)
-      val many = sc.parallelize(portfolioBeans, 200)
-      val groups = sc.parallelize(portGroupInfoes, 200)
-      val shareRdds = sc.parallelize(shareManies, 1)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
+      println("111111111111111111111111111111111111111111111111111111111111111111")
+      println("111111111111111111111111111111111111111111111111111111111111111111")
+      println("111111111111111111111111111111111111111111111111111111111111111111")
+      println("111111111111111111111111111111111111111111111111111111111111111111")
+      println("111111111111111111111111111111111111111111111111111111111111111111")
+      println("111111111111111111111111111111111111111111111111111111111111111111")
+      val portfolias = sc.parallelize(portJson, 200)
+//      val manyRdd = sc.parallelize(manyPortfolioBeans, 200)
+//      val groups = sc.parallelize(groupDataBeans, 200)
+//      val shareRdds = sc.parallelize(shareManies, 1)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive2(portfolias, spark, diffDay)
+//      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(manyRdd, spark, diffDay)
+//      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
+//      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
       sc.stop()
     } catch {
       case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件", "失败")
