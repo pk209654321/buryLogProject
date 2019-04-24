@@ -1,4 +1,4 @@
-package testBury;
+package testBury.javaTest;
 
 
 

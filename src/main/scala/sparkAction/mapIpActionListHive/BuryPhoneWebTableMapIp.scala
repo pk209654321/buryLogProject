@@ -47,7 +47,7 @@ object BuryPhoneWebTableMapIp {
     })
 
     val createDataFrame: DataFrame = spark.createDataFrame(map,StructUtil.structCommonMapIp)
-    val reDF = createDataFrame.repartition(1).persist()
+    val reDF = createDataFrame.repartition(1)
     reDF.createOrReplaceTempView("StockShopPhoneWebMap")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
     val hql= s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from StockShopPhoneWebMap"

@@ -37,9 +37,12 @@ object BuryMainUser {
         StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
       })
       //清洗数据
-      val allData = filterBlank.map(BuryCleanCommon.cleanCommonFunction).filter(_.size() > 0)
+      val allData = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size() > 0)
       val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
-      val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).cache()
+      val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).filter(one => {
+        val line = one.line
+        StringUtils.isNotBlank(line)
+      })
       val filterVisit: RDD[BuryLogin] = allDataOneRdd.filter(_.logType == 1) //过滤出访问日志Data
       val oldDataOneRdd: RDD[BuryLogin] = filterVisit.filter(BuryCleanCommon.getOldVersionFunction)
       val newDataOneRdd = filterVisit.filter(BuryCleanCommon.getNewVersionFunction)

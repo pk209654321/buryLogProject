@@ -204,4 +204,29 @@ object StructUtil {
     StructField("topBlockUrl", StringType),
     StructField("upShareViewUrl", StringType)
   ))
+
+  val structEarlyWarn=StructType(List(
+    StructField("iAccountId",LongType),
+    StructField("vGUID",StringType),
+    StructField("lUptTime",LongType),
+    StructField("iSwitch",IntegerType),
+    StructField("bLimitUp",BooleanType),
+    StructField("bLimitDown",BooleanType),
+    StructField("bSpeedUp",BooleanType),
+    StructField("bSpeedDown",BooleanType),
+    StructField("bChangeAsc",BooleanType),
+    StructField("bChangeDesc",BooleanType),
+    StructField("bDay30Highest",BooleanType),
+    StructField("bDay60Highest",BooleanType),
+    StructField("sDtSecCode",StringType),
+    StructField("sDtSecName",StringType),
+    StructField("dUpperPoint",DoubleType),
+    StructField("dLowerPoint",DoubleType),
+    StructField("dDayChangeAsc",DoubleType),
+    StructField("dDayChangeDesc",DoubleType),
+    StructField("dFiveMinChangeAsc",DoubleType),
+    StructField("dFiveMinChangeDesc",DoubleType),
+    StructField("vBroadcastTime",ArrayType(IntegerType)),
+    StructField("vStrategyId",ArrayType(IntegerType))
+  ))
 }

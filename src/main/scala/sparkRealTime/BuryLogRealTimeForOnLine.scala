@@ -14,7 +14,7 @@ import sparkRealTime.buryLogRealTimeForCrm.RealTimeCrmLineTimeIp
 
 /**
   * ClassName BuryLogRealTimeMysql
-  * Description TODO 实时推送数据到crm系统中:1,用户最后在线时间 2,用户id 3,用户ip地址
+  * Description TODO 实时推送数据到crm系统中:1,用户最后在线时间 2,用户id
   * Author lenovo
   * Date 2019/3/5 14:10
   **/

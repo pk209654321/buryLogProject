@@ -1,4 +1,4 @@
-package testBury;
+package testBury.javaTest;
 
 import hadoopCode.hbaseFormal.util.HBaseUtil;
 import org.apache.hadoop.hbase.client.Put;

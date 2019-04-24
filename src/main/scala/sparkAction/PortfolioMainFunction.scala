@@ -13,6 +13,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
+import sparkAction.PortfolioMysqlData.PortfolioMysqlDataObject
 import sparkAction.portfolioHive.PortfolioProSecInfoHiveInsertObject
 
 import scala.collection.JavaConversions._
@@ -20,13 +21,27 @@ import scala.collection.{JavaConversions, mutable}
 
 /**
   * ClassName PortfolioMainFunction
-  * Description TODO 用户自选股信息接入,分享控件信息接入
+  * Description TODO 用户自选股信息接入,分享控件信息接入,用户股票预警
   * Author lenovo
   * Date 2019/2/12 9:16
   **/
 object PortfolioMainFunction {
   def main(args: Array[String]): Unit = {
     try {
+      val local: Boolean = LocalOrLine.judgeLocal()
+      var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
+      sparkConf.set("spark.rpc.message.maxSize", "256")
+      sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
+      sparkConf.set("spark.network.timeout","3600")
+      if (local) {
+        System.setProperty("HADOOP_USER_NAME", "wangyd")
+        sparkConf = sparkConf.setMaster("local[*]")
+      }
+      val sc: SparkContext = new SparkContext(sparkConf)
+      sc.setLogLevel("WARN")
+      val spark = SparkSession.builder().config("spark.debug.maxToStringFields", "100")
+        .enableHiveSupport()
+        .getOrCreate()
       val diffDay: Int = args(0).toInt
       val dataMysql = getMysqlDataAll(diffDay)
       //用户自选股原始信息
@@ -41,33 +56,24 @@ object PortfolioMainFunction {
       //========================================================================================
       //获取分享控件
       val shareManies = getShare.flatMap(_.toSeq)
-
-      val local: Boolean = LocalOrLine.judgeLocal()
-      var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
-      sparkConf.set("spark.akka.frameSize", "256")
-      sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
-      sparkConf.set("spark.network.timeout","3600")
-      if (local) {
-        System.setProperty("HADOOP_USER_NAME", "wangyd")
-        sparkConf = sparkConf.setMaster("local[*]")
-      }
-      val sc: SparkContext = new SparkContext(sparkConf)
-      sc.setLogLevel("WARN")
-      val spark = SparkSession.builder().config("spark.debug.maxToStringFields", "100")
-        .enableHiveSupport()
-        .getOrCreate()
+      //========================================================================================
+      //获取预警数据
+      val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
+      //========================================================================================
       //val hc: HiveContext = new HiveContext(sc)
       val portfolias = sc.parallelize(portfolioStrs, 200)
       val many = sc.parallelize(portfolioBeans, 200)
       val groups = sc.parallelize(portGroupInfoes, 200)
       val shareRdds = sc.parallelize(shareManies, 1)
+      val userStockAlertCfgDataAllsRdd = sc.parallelize(userStockAlertCfgDataAlls,20)
+      PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd,spark)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
       sc.stop()
     } catch {
-      case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件", "失败")
+      case e: Throwable => e.printStackTrace(); //MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警", "失败")
     }
   }
 

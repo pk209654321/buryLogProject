@@ -137,6 +137,11 @@
             <artifactId>tars-net</artifactId>
             <version>1.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.niufu</groupId>
+            <artifactId>niufu-tar</artifactId>
+            <version>1.0.4-SNAPSHOT</version>
+        </dependency>
         <!--<dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -177,14 +182,13 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <!--<excludes>
+               <!-- <excludes>
                     <exclude>dev/*</exclude>
                     <exclude>prod/*</exclude>
                 </excludes>-->
             </resource>
             <resource>
                 <directory>src/main/resources/${profiles.active}</directory>
-                <filtering>true</filtering>
             </resource>
         </resources>
         <plugins>

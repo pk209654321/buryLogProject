@@ -1,4 +1,4 @@
-package testBury
+package testBury.scalaTest
 
 import java.util
 
@@ -6,14 +6,14 @@ import bean.shareControl.{BlockInfo, ShareMany, SharePageInfo}
 import bean.userChoiceStock.{PortGroupInfo, PortfolioBean}
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
-import com.dengtacj.bec.{GroupInfo, ProSecInfo, ProSecInfoList}
+import com.dengtacj.bec.ProSecInfoList
 import com.qq.tars.protocol.tars.BaseDecodeStream
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
-import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
-import sparkAction.PortfolioMysqlData.PortfolioMysqlData
+import scalikejdbc.{NamedDB, SQL}
+import sparkAction.PortfolioMysqlData.PortfolioMysqlDataObject
 import sparkAction.portfolioHive.PortfolioProSecInfoHiveInsertObject
 
 import scala.collection.JavaConversions._
@@ -28,21 +28,6 @@ import scala.collection.{JavaConversions, mutable}
 object PortfolioMainFunctionNew {
   def main(args: Array[String]): Unit = {
     try {
-      //获取原始数据
-      val portData = PortfolioMysqlData.getPortfolioData()
-      //获取Json  portfolio
-      val portJson = PortfolioMysqlData.getPortfolioJsonStr(portData)
-      //获取many数据
-      val manyPortfolio = PortfolioMysqlData.getManyPortfolio(portData)
-      val manyPortfolioBeans=manyPortfolio.flatMap(_.toSeq)
-      //获取group数据
-      val groupData = PortfolioMysqlData.getGroupPortfolio(portData)
-      val groupDataBeans = groupData.flatMap(_.toSeq)
-
-      val diffDay: Int = args(0).toInt
-      //========================================================================================
-      //获取分享控件
-      val shareManies = getShare.flatMap(_.toSeq)
       val local: Boolean = LocalOrLine.judgeLocal()
       var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunctionNew")
       sparkConf.set("spark.akka.frameSize", "256")
@@ -57,6 +42,23 @@ object PortfolioMainFunctionNew {
       val spark = SparkSession.builder().config("spark.debug.maxToStringFields", "100")
         .enableHiveSupport()
         .getOrCreate()
+
+      //获取原始数据
+      val portData = PortfolioMysqlDataObject.getPortfolioData()
+      //获取Json  portfolio
+      val portJson = PortfolioMysqlDataObject.getPortfolioJsonStr(portData)
+      //获取many数据
+      val manyPortfolio = PortfolioMysqlDataObject.getManyPortfolio(portData)
+      val manyPortfolioBeans=manyPortfolio.flatMap(_.toSeq)
+      //获取group数据
+      val groupData = PortfolioMysqlDataObject.getGroupPortfolio(portData)
+      val groupDataBeans = groupData.flatMap(_.toSeq)
+
+      val diffDay: Int = args(0).toInt
+      //========================================================================================
+      //获取分享控件
+      val shareManies = getShare.flatMap(_.toSeq)
+
       //val hc: HiveContext = new HiveContext(sc)
       println("111111111111111111111111111111111111111111111111111111111111111111")
       println("111111111111111111111111111111111111111111111111111111111111111111")

@@ -2,6 +2,7 @@ package sparkAction.portfolioHive
 
 import java.util
 
+import bean.earlyWarning.UserStockAlertCfgDataAll
 import bean.shareControl.ShareMany
 import bean.userChoiceStock.{PortGroupInfo, PortfolioBean}
 import conf.ConfigurationManager
@@ -11,7 +12,7 @@ import org.apache.spark.sql.hive.HiveContext
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.PortfolioStr
 
-import scala.collection.mutable
+import scala.collection.{JavaConversions, mutable}
 
 /**
   * ClassName PortfolioHiveInsertObject
@@ -24,6 +25,7 @@ object PortfolioProSecInfoHiveInsertObject {
   private val TABLE_MANY: String = ConfigurationManager.getProperty("portfolioTableTestMany")
   private val TABLE_GROUP: String = ConfigurationManager.getProperty("portfolioTableTestGroup")
   private val TABLE_SHARE: String = ConfigurationManager.getProperty("portfolioTableTestShare")
+  private val TABLE_WARN:String=ConfigurationManager.getProperty("portfolioTableTestEarlyWarn")
 
   def insertPortfolioToHive2(portData: RDD[(String,String,String)], spark: SparkSession, dayFlag: Int): Unit = {
     val portRow = portData.map(line => {
@@ -278,6 +280,46 @@ object PortfolioProSecInfoHiveInsertObject {
     reDF.createOrReplaceTempView("tempTable")
     spark.sql(s"insert overwrite  table ${TABLE_SHARE} select * from tempTable")
   }
+
+  def insertEarlyWarn(userStockAlertCfgDataAllsRdd: RDD[UserStockAlertCfgDataAll],spark: SparkSession): Unit ={
+    val userWarn = userStockAlertCfgDataAllsRdd.map(one => {
+
+
+      Row(one.getiAccountId(),
+        one.getvGUID(),
+        one.getlUptTime(),
+        one.getiSwitch(),
+        one.isbLimitUp(),
+        one.isbLimitDown(),
+        one.isbSpeedUp(),
+        one.isbSpeedDown(),
+        one.isbChangeAsc(),
+        one.isbChangeDesc(),
+        one.isbDay30Highest(),
+        one.isbDay60Highest(),
+        one.getsDtSecCode(),
+        one.getsDtSecName(),
+        one.getdUpperPoint(),
+        one.getdLowerPoint(),
+        one.getdDayChangeAsc(),
+        one.getdDayChangeDesc(),
+        one.getdFiveMinChangeAsc(),
+        one.getdFiveMinChangeDesc(),
+        one.getvBroadcastTime() match {
+          case null => null
+          case _ => JavaConversions.asScalaBuffer(one.getvBroadcastTime())
+        },
+        one.getvStrategyId() match {
+          case null=> null
+          case _=>JavaConversions.asScalaBuffer(one.getvStrategyId())
+        })
+    })
+    val createDataFrame = spark.createDataFrame(userWarn, StructUtil.structEarlyWarn).repartition(1)
+    createDataFrame.createOrReplaceTempView("tempTable")
+    spark.sql(s"insert overwrite  table ${TABLE_WARN} select * from tempTable")
+
+  }
+
 
 
 }

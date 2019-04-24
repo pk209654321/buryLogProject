@@ -1,21 +1,16 @@
-package testBury
+package testBury.scalaTest
 
 import java.util
-import java.util.Date
 
 import com.alibaba.fastjson.JSON
-import com.alibaba.fastjson.serializer.SerializerFeature
 import com.google.gson.Gson
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.hive.HiveContext
-import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
+import org.apache.spark.{SparkConf, SparkContext}
+import scalaUtil.{LocalOrLine, MailUtil}
+import sparkAction.BuryLogin
 import sparkAction.buryCleanUtil.BuryCleanCommon
-import sparkAction.{BuryLogin, BuryMainFunction}
-import sparkAction.mapIpActionListHive.BuryClientWebTableMapIp
-
-import scala.collection.mutable
 
 /**
   * ClassName TempRunBury
