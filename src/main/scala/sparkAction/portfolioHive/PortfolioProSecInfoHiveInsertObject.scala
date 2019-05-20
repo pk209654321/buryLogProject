@@ -312,7 +312,9 @@ object PortfolioProSecInfoHiveInsertObject {
         one.getvStrategyId() match {
           case null=> null
           case _=>JavaConversions.asScalaBuffer(one.getvStrategyId())
-        })
+        },
+        one.getDataKey,
+        one.getUpdateTime)
     })
     val createDataFrame = spark.createDataFrame(userWarn, StructUtil.structEarlyWarn).repartition(1)
     createDataFrame.createOrReplaceTempView("tempTable")

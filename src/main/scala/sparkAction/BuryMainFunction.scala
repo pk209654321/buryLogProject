@@ -56,7 +56,7 @@ object BuryMainFunction {
         //老规则数据清洗入库
         oldVersionCleanInsert(oldDataOneRdd, spark, diffDay)
         //新规则数据+老规则数据清洗入库
-        newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod)
+        //newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod)
         //测试
         //testFun2(allDataOneRdd,spark,0,dictBrod)
      // }

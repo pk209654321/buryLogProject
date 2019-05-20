@@ -73,9 +73,57 @@ public class HttpPostUtil {
             }
         }
     }
+
+    public static void doHttpPost(String xmlInfo, String urlstr,String key,String value) {
+        System.out.println("发起的数据:" + xmlInfo);
+        byte[] xmlData = xmlInfo.getBytes();
+        InputStream instr = null;
+        java.io.ByteArrayOutputStream out = null;
+        try {
+            //URL url = new URL(URL);
+            URL url = new URL(urlstr);
+            URLConnection urlCon = url.openConnection();
+            urlCon.setDoOutput(true);
+            urlCon.setDoInput(true);
+            urlCon.setUseCaches(false);
+            urlCon.setRequestProperty(key, value);
+          /*  urlCon.setRequestProperty("content-Type", "application/json");
+            urlCon.setRequestProperty("charset", "utf-8");
+            urlCon.setRequestProperty("Content-length",
+                    String.valueOf(xmlData.length));*/
+            urlCon.setConnectTimeout(30000);
+            urlCon.setReadTimeout(30000);
+           DataOutputStream printout = new DataOutputStream(
+                    urlCon.getOutputStream());
+            printout.write(xmlData);
+            printout.flush();
+            printout.close();
+            instr = urlCon.getInputStream();
+            byte[] bis = IOUtils.toByteArray(instr);
+            String ResponseString = new String(bis, "UTF-8");
+            if ((ResponseString == null) || ("".equals(ResponseString.trim()))) {
+                System.out.println("返回空");
+            }
+            System.out.println("返回数据为:" + ResponseString);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                instr.close();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+
     public synchronized static void sendMessage(Object t, String urlstr){
         String toJSONString = JSON.toJSONString(t);
         HttpPostUtil.doHttpPost(toJSONString,urlstr);
+    }
+
+    public synchronized static void sendMessageForPolarLight(String urlstr,String key,String value){
+        HttpPostUtil.doHttpPost("", urlstr, key, value);
     }
 
     public static void main(String[] args) {

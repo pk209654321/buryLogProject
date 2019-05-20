@@ -33,7 +33,7 @@ object BuryVisitTableStringIp {
       Row(all,ipStr)
     })
     val frame: DataFrame = spark.createDataFrame(visitRow,StructUtil.structCommonStringIp)
-    val reDF = frame.repartition(1)
+    val reDF = frame.repartition(2)
     reDF.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
     spark.sql(s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")

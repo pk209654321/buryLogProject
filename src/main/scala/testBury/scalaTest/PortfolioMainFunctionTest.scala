@@ -1,4 +1,4 @@
-package sparkAction
+package testBury.scalaTest
 
 import java.util
 
@@ -25,7 +25,7 @@ import scala.collection.{JavaConversions, mutable}
   * Author lenovo
   * Date 2019/2/12 9:16
   **/
-object PortfolioMainFunction {
+object PortfolioMainFunctionTest {
   def main(args: Array[String]): Unit = {
     try {
       val local: Boolean = LocalOrLine.judgeLocal()
@@ -43,37 +43,37 @@ object PortfolioMainFunction {
         .enableHiveSupport()
         .getOrCreate()
       val diffDay: Int = args(0).toInt
-      val dataMysql = getMysqlDataAll(diffDay)
+      /*val dataMysql = getMysqlDataAll(diffDay)*/
       //用户自选股原始信息
-      val portfolioStrs = getPortfolioFromMysql(dataMysql)
-      val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
+     /* val portfolioStrs = getPortfolioFromMysql(dataMysql)
+      val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)*/
       //用户自选股组信息
-      val groupInfo = getGroupInfoFromMysql(dataMysql)
+      /*val groupInfo = getGroupInfoFromMysql(dataMysql)*/
       //自选股保存的证券信息
-      val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)
+     /* val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)*/
       //用户自选股组信息
-      val portGroupInfoes = groupInfo.flatMap(_.toSeq)
+     /* val portGroupInfoes = groupInfo.flatMap(_.toSeq)*/
       //========================================================================================
       //获取分享控件
-      val shareManies = getShare.flatMap(_.toSeq)
+     /* val shareManies = getShare.flatMap(_.toSeq)*/
       //========================================================================================
       //获取预警数据
       val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
       //========================================================================================
       //val hc: HiveContext = new HiveContext(sc)
-      val portfolias = sc.parallelize(portfolioStrs, 200)
+     /* val portfolias = sc.parallelize(portfolioStrs, 200)
       val many = sc.parallelize(portfolioBeans, 200)
       val groups = sc.parallelize(portGroupInfoes, 200)
-      val shareRdds = sc.parallelize(shareManies, 1)
+      val shareRdds = sc.parallelize(shareManies, 1)*/
       val userStockAlertCfgDataAllsRdd = sc.parallelize(userStockAlertCfgDataAlls,20)
       PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd,spark)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
+     /* PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
+      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)*/
       sc.stop()
     } catch {
-      case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警", "失败")
+      case e: Throwable => e.printStackTrace(); //MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警", "失败")
     }
   }
 
@@ -404,8 +404,3 @@ object PortfolioMainFunction {
   }
 }
 
-case class Portfolio(var sKey: String, var sValue: Array[Byte], var updatetime: String)
-
-case class PortfolioStr(var sKey: String, var sValue: String, var updatetime: String)
-
-case class ShareControl(scene_code: Int, share_page_info: String)

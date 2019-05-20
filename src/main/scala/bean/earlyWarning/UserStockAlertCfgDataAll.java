@@ -19,7 +19,8 @@ public class UserStockAlertCfgDataAll implements Serializable {
     //public StockIntelligentAlert stStockIntelligentAlert = null;
     //public List<StockCustomAlert> vStockCustomAlert = null;
     public long lUptTime = 0L;
-
+    public String dataKey=null;
+    public long updateTime=0L;
 
     //StockIntelligentAlert
     public int iSwitch = 1;
@@ -44,6 +45,23 @@ public class UserStockAlertCfgDataAll implements Serializable {
     public double dFiveMinChangeDesc = -1.0D;
     public List<Integer> vBroadcastTime = null;
     public List<Integer> vStrategyId = null;
+
+
+    public String getDataKey() {
+        return dataKey;
+    }
+
+    public void setDataKey(String dataKey) {
+        this.dataKey = dataKey;
+    }
+
+    public long getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(long updateTime) {
+        this.updateTime = updateTime;
+    }
 
     public long getiAccountId() {
         return iAccountId;

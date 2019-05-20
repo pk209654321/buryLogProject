@@ -227,6 +227,8 @@ object StructUtil {
     StructField("dFiveMinChangeAsc",DoubleType),
     StructField("dFiveMinChangeDesc",DoubleType),
     StructField("vBroadcastTime",ArrayType(IntegerType)),
-    StructField("vStrategyId",ArrayType(IntegerType))
+    StructField("vStrategyId",ArrayType(IntegerType)),
+    StructField("dataKey",StringType),
+    StructField("updateTime",LongType)
   ))
 }

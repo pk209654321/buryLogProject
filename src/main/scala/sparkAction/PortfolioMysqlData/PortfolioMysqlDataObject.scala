@@ -204,13 +204,13 @@ object PortfolioMysqlDataObject {
   }
 
   //从中间云平台库中获取预警数据
-  def getEarlyWarningDataFromMysql():  List[UserStockAlertCfgData] = {
+  def getEarlyWarningDataFromMysql() = {
     DBs.setupAll()
     NamedDB('warn).readOnly { implicit session =>
       SQL(s"select * from nf_user_intelligent_data").map(rs => {
         val keyStr = rs.string("DATA_KEY")
         val valueStr = rs.bytes("DATA_VALUE")
-        val timeStr = rs.long("UPDATE_TIME")
+        val timeLong = rs.long("UPDATE_TIME")
         val stream = new BaseDecodeStream(valueStr)
         val userStockAlertCfgData = new UserStockAlertCfgData()
         userStockAlertCfgData.readFrom(stream)
@@ -218,14 +218,18 @@ object PortfolioMysqlDataObject {
         if(iAccountId==19532L){
           println("-----------------------"+JSON.toJSONString(userStockAlertCfgData, SerializerFeature.WriteMapNullValue))
         }
-        userStockAlertCfgData
+        (userStockAlertCfgData,keyStr,timeLong)
       }).list().apply()
     }
   }
-    def getEveryWarning(list:List[UserStockAlertCfgData]) ={
+    def getEveryWarning(list:List[(UserStockAlertCfgData,String,Long)]) ={
+      println("------------------------"+list.size)
       val arrayBuffer = mutable.ArrayBuffer[UserStockAlertCfgDataAll]()
-      for (elem <- list) {
+      for (one <- list) {
         val userStockAlertCfgDataAll = new UserStockAlertCfgDataAll()
+        val elem = one._1
+        val dataKey = one._2
+        val updateTime = one._3
         val iAccountId = elem.getIAccountId
         val lUptTime = elem.getLUptTime
         val stStockIntelligentAlert = elem.getStStockIntelligentAlert
@@ -251,6 +255,8 @@ object PortfolioMysqlDataObject {
         userStockAlertCfgDataAll.setbSpeedDown(bSpeedDown)
         userStockAlertCfgDataAll.setbSpeedUp(bSpeedUp)
         userStockAlertCfgDataAll.setiSwitch(iswitch)
+        userStockAlertCfgDataAll.setDataKey(dataKey)
+        userStockAlertCfgDataAll.setUpdateTime(updateTime)
         val jSONObject = JSON.parseObject(JSON.toJSONString(elem,SerializerFeature.WriteMapNullValue))
         val guidStr = jSONObject.getString("vGUID") match {
           case "" => null
@@ -304,7 +310,8 @@ object PortfolioMysqlDataObject {
             userStockAlertCfgDataAll2.setbSpeedDown(bSpeedDown)
             userStockAlertCfgDataAll2.setbSpeedUp(bSpeedUp)
             userStockAlertCfgDataAll2.setiSwitch(iswitch)
-
+            userStockAlertCfgDataAll2.setDataKey(dataKey)
+            userStockAlertCfgDataAll2.setUpdateTime(updateTime)
             //插入新的数据
             userStockAlertCfgDataAll2.setdDayChangeAsc(dDayChangeAsc)
             userStockAlertCfgDataAll2.setdDayChangeDesc(dDayChangeDesc)
