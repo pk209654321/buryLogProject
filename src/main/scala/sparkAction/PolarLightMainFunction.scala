@@ -1,13 +1,8 @@
 package sparkAction
 
-import conf.ConfigurationManager
-import org.apache.commons.lang3.StringUtils
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
-import sparkAction.BuryMainFunction.oldVersionCleanInsert
-import sparkAction.buryCleanUtil.BuryCleanCommon
 import sparkAction.polarLightForAction.PolarLightAction
 
 /**

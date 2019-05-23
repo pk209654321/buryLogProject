@@ -1,5 +1,7 @@
 package sparkAction.polarLightForAction
 
+import conf.ConfigurationManager
+
 /**
   * ClassName PolarLigthSql
   * Description TODO
@@ -7,9 +9,10 @@ package sparkAction.polarLightForAction
   * Date 2019/5/17 11:17
   **/
 object PolarLigthSql {
+  private val CHANNEL: String = ConfigurationManager.getProperty("jiguang.channel")
   //极光sql
   val hql=
-    """
+    s"""
       |select p1.hp_stat_date
       |			        ,p1.guid
       |					,p1.device_id
@@ -56,7 +59,7 @@ object PolarLigthSql {
       |									) p2
       |								 on p1.guid = p2.guid
       |							  where (p2.guid is null or p2.first_date = p1.hp_stat_date)
-      |								and download_channel in ('huawei', 'appstore')
+      |								and download_channel in ('${CHANNEL}', 'appstore')
       |								and (imei <> '' or idfa <> '')
       |							) p1
       |					) p1

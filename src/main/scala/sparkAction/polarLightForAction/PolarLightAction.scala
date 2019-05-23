@@ -7,7 +7,7 @@ import scalikejdbc.config.DBs
 
 /**
   * ClassName PolarLightAction
-  * Description TODO
+  * Description 极光对接逻辑
   * Author lenovo
   * Date 2019/5/17 10:52
   **/
