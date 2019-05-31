@@ -8,7 +8,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{DateScalaUtil, LocalOrLine, MailUtil}
-import sparkAction.StringIpActionListHive.{BuryClientWebTableStringIp, BuryPhoneClientTableStringIp, BuryVisitTableStringIp}
+import sparkAction.StringIpActionListHive.{BuryClientWebTableStringIp, BuryDeviceInfosStringIp, BuryPhoneClientTableStringIp, BuryVisitTableStringIp}
 import sparkAction.buryCleanUtil.BuryCleanCommon
 import sparkAction.mapIpActionListHive._
 
@@ -31,16 +31,24 @@ object BuryMainFunction {
         //System.setProperty("HADOOP_USER_NAME", "wangyd")
         sparkConf = sparkConf.setMaster("local[*]")
       }
+      /*
+      暂停使用
       val sc: SparkContext = new SparkContext(sparkConf)
       sc.setLogLevel("WARN")
-      //val hiveContext: HiveContext = new HiveContext(sc)
-      val spark = SparkSession.builder().enableHiveSupport().getOrCreate()
+      sc.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")*/
+      val spark = SparkSession
+        .builder()
+        .config(sparkConf)
+        .enableHiveSupport()
+        .getOrCreate()
+      spark.sparkContext.setLogLevel("WARN")
+      spark.sparkContext.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
       //for (dayFlag <- (diffDay to -1)) { //按天数循环
         val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
         //val realPath="E:\\desk\\日志out\\rzout"
-        val file: RDD[String] = sc.textFile(realPath, 1)
-        val dictRdd = sc.textFile(dict).collect()
-        val dictBrod = sc.broadcast(dictRdd).value
+        val file: RDD[String] = spark.sparkContext.textFile(realPath, 1)
+        val dictRdd = spark.sparkContext.textFile(dict).collect()
+        val dictBrod = spark.sparkContext.broadcast(dictRdd).value
         val filterBlank: RDD[String] = file.filter(line => {
           //过滤为空的和有ip但是post传递为空的
           StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
@@ -56,13 +64,13 @@ object BuryMainFunction {
         //老规则数据清洗入库
         oldVersionCleanInsert(oldDataOneRdd, spark, diffDay)
         //新规则数据+老规则数据清洗入库
-        //newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod)
+        newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod)
         //测试
         //testFun2(allDataOneRdd,spark,0,dictBrod)
      // }
-      sc.stop()
+      spark.close()
     } catch {
-      case e: Throwable => MailUtil.sendMail("spark日志清洗调度", "清洗日志失败"); e.printStackTrace()
+      case e: Throwable => MailUtil.sendMail("spark日志清洗调度错误", e.toString); e.printStackTrace()
     }
   }
 
@@ -128,7 +136,8 @@ object BuryMainFunction {
     //清洗出股掌柜手机客户端行为数据
     BuryPhoneClientTableStringIp.cleanPhoneClientData(filterClient, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
-
+    val filterDeviceInfos = DataRddList.filter(_.logType==3)
+    BuryDeviceInfosStringIp.cleanBuryDeviceInfosStringIp(filterDeviceInfos,spark,dayFlag)
     //val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
     //BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)

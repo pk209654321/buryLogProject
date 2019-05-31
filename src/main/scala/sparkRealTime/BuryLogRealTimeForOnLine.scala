@@ -50,7 +50,7 @@ object BuryLogRealTimeForOnLine {
 
     val stream = if (fromOffsets.size == 0) { // 假设程序第一次启动
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
-    } else {
+    } else {//程序不是第一次启动
       var checkedOffset = Map[TopicAndPartition, Long]()
       val kafkaCluster = new KafkaCluster(kafkaParams)
       val earliestLeaderOffsets = kafkaCluster.getEarliestLeaderOffsets(fromOffsets.keySet)
@@ -69,7 +69,6 @@ object BuryLogRealTimeForOnLine {
           }
         })
       }
-      // 程序菲第一次启动
       val messageHandler = (mm: MessageAndMetadata[String, String]) => (mm.key(), mm.message())
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](ssc, kafkaParams, checkedOffset, messageHandler)
     }

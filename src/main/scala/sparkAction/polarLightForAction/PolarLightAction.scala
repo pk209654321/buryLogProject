@@ -133,7 +133,7 @@ values (
       .option("driver", DRIVER1)
       .option("user", USER1)
       .option("password", PASSWORD1)
-      .option("dbtable", s"(select sGUID from t_account_resigter_info WHERE  time <=unix_timestamp(CURDATE()) AND time >= UNIX_TIMESTAMP(DATE_SUB(curdate(),INTERVAL 1 DAY)) and sGUID <> '' and sPhone <> '') as t1")
+      .option("dbtable", s"(select sGUID from t_account_resigter_info WHERE time >= UNIX_TIMESTAMP(DATE_SUB(curdate(),INTERVAL 1 DAY)) and sGUID <> '' and sPhone <> '') as t1")
       .load().createOrReplaceTempView("register_mysql")
 
     //根据注册表先->过滤注册历史数据->匹配激活历史数据->推送新注册数据

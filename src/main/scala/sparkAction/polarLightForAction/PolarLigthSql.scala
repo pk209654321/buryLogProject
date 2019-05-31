@@ -48,6 +48,8 @@ object PolarLigthSql {
       |											  from db_ods.t_stock_login_log_rt
       |											 where hp_stat_date >= date_sub(current_date, 2)
       |											   and access_time <> ''
+      |                        and guid <> ''
+      |                        and (imei <> '' or idfa <> '')
       |											) p1
       |									  where p1.num = 1
       |									) p1
@@ -59,8 +61,18 @@ object PolarLigthSql {
       |									) p2
       |								 on p1.guid = p2.guid
       |							  where (p2.guid is null or p2.first_date = p1.hp_stat_date)
-      |								and download_channel in ('${CHANNEL}', 'appstore')
-      |								and (imei <> '' or idfa <> '')
+      |								and download_channel in ('yyb-cpd'
+      |                                        ,'jg-xgt1'
+      |                                        ,'jg-xgt2'
+      |                                        ,'jg-xgt3'
+      |                                        ,'jg-xgt4'
+      |                                        ,'jg-xgt5'
+      |                                        ,'jg-gdt1'
+      |                                        ,'jg-gdt2'
+      |                                        ,'jg-gdt3'
+      |                                        ,'jg-gdt4'
+      |                                        ,'jg-gdt5'
+      |                                        ,'appstore')
       |							) p1
       |					) p1
       |			  where p1.num = 1

@@ -4,9 +4,10 @@ import scalaUtil.HttpPostUtil
 
 /**
   * ClassName PolarLightPost
-  * Description TODO
+  * Description TODO ,根据 Android,ios 传递post不同的地址
   * Author lenovo
   * Date 2019/5/18 11:10
+  *
   **/
 object PolarLightPost {
 
