@@ -231,4 +231,14 @@ object StructUtil {
     StructField("dataKey",StringType),
     StructField("updateTime",LongType)
   ))
+
+  //string_ip_map类型划分
+  val structTagInfo = StructType(List(StructField("user_id", IntegerType),
+    StructField("session_id", StringType)
+  ))
+
+  val structPushButton=StructType(List(StructField("iAccountId",LongType),
+    StructField("mMsgPushButton",MapType(IntegerType,IntegerType)),
+      StructField("updatetime",StringType)
+  ))
 }

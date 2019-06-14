@@ -25,14 +25,10 @@ object ScalaTest {
   def getEarlyWarningTest(): Unit = {
     DBs.setupAll()
     NamedDB('warn).readOnly { implicit session =>
-      SQL(s"select * from nf_user_intelligent_data").map(rs => {
-        val keyStr = rs.string("DATA_KEY")
-        val valueStr = rs.bytes("DATA_VALUE")
-        val timeStr = rs.long("UPDATE_TIME")
-        val stream = new BaseDecodeStream(valueStr)
-        val userStockAlertCfgData = new UserStockAlertCfgData()
-        userStockAlertCfgData.readFrom(stream)
-        println(JSON.toJSONString(userStockAlertCfgData, SerializerFeature.WriteMapNullValue))
+      SQL(s"select * from db_sscf.t_notify_push_button limit 10").map(rs => {
+        val b = rs.get[Array[Byte]]("sValue")
+        val str = new String(b)
+        println(str)
       }).list().apply()
     }
   }

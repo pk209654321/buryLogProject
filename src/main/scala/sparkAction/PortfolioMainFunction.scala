@@ -14,7 +14,7 @@ import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
 import sparkAction.PortfolioMysqlData.PortfolioMysqlDataObject
-import sparkAction.portfolioHive.PortfolioProSecInfoHiveInsertObject
+import sparkAction.portfolioHive.{PortfolioProSecInfoHiveInsertObject, UserPushButtonInsertToHive}
 
 import scala.collection.JavaConversions._
 import scala.collection.{JavaConversions, mutable}
@@ -31,17 +31,19 @@ object PortfolioMainFunction {
       val local: Boolean = LocalOrLine.judgeLocal()
       var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
       sparkConf.set("spark.rpc.message.maxSize", "256")
-      sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
+      //sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
       sparkConf.set("spark.network.timeout","3600")
+      sparkConf.set("spark.debug.maxToStringFields", "100")
       if (local) {
         System.setProperty("HADOOP_USER_NAME", "wangyd")
         sparkConf = sparkConf.setMaster("local[*]")
       }
-      val sc: SparkContext = new SparkContext(sparkConf)
-      sc.setLogLevel("WARN")
-      val spark = SparkSession.builder().config("spark.debug.maxToStringFields", "100")
+      //val sc: SparkContext = new SparkContext(sparkConf)
+      val spark = SparkSession.builder()
+        .config(sparkConf)
         .enableHiveSupport()
         .getOrCreate()
+      spark.sparkContext.setLogLevel("WARN")
       val diffDay: Int = args(0).toInt
       val dataMysql = getMysqlDataAll(diffDay)
       //用户自选股原始信息
@@ -60,20 +62,24 @@ object PortfolioMainFunction {
       //获取预警数据
       val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
       //========================================================================================
-      //val hc: HiveContext = new HiveContext(sc)
-      val portfolias = sc.parallelize(portfolioStrs, 200)
-      val many = sc.parallelize(portfolioBeans, 200)
-      val groups = sc.parallelize(portGroupInfoes, 200)
-      val shareRdds = sc.parallelize(shareManies, 1)
-      val userStockAlertCfgDataAllsRdd = sc.parallelize(userStockAlertCfgDataAlls,20)
+      //获取用户开关数据
+      val userPushData = UserPushButtonInsertToHive.getUserPushData()
+      //========================================================================================
+      val portfolias = spark.sparkContext.parallelize(portfolioStrs, 200)
+      val many = spark.sparkContext.parallelize(portfolioBeans, 200)
+      val groups = spark.sparkContext.parallelize(portGroupInfoes, 200)
+      val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
+      val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls,20)
+      val userPushRdd = spark.sparkContext.parallelize(userPushData,20)
+      UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd,spark)
       PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd,spark)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
-      sc.stop()
+      spark.close()
     } catch {
-      case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警", "失败")
+      case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警|用户开关设置", "失败")
     }
   }
 
@@ -384,9 +390,15 @@ object PortfolioMainFunction {
           portfolioBean2.setsAiAlert(info.isAiAlert)
           portfolioBean2.setsDel(info.isDel)
           portfolioBean2.setsDKAlert(info.isDKAlert)
-          portfolioBean2.setsDtSecCode(info.getSDtSecCode)
+          portfolioBean2.setsDtSecCode(info.getSDtSecCode match {
+            case "" => null
+            case _=> info.getSDtSecCode
+          })
           portfolioBean2.setsHold(info.isHold)
-          portfolioBean2.setsName(info.getSName)
+          portfolioBean2.setsName(info.getSName match {
+            case "" => null
+            case _ => info.getSName
+          })
           portfolioBean2.setStCommentInfo_iCreateTime(iCreateTime)
           portfolioBean2.setStCommentInfo_iUpdateTime(iUpdateTime)
           portfolioBean2.setStCommentInfo_sComment(sComment)
