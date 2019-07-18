@@ -52,7 +52,7 @@ object BuryMainUser {
       BuryLoginReportNew.repotUserLoginNew(newDataOneRdd)
       sc.stop()
     } catch {
-      case e: Throwable => MailUtil.sendMail("spark用户登录上报", "用户登录上报错误")
+      case e: Throwable => MailUtil.sendMailNew("spark用户登录上报", "执行失败")
     }
   }
 }

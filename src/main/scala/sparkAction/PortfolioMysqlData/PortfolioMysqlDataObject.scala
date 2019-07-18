@@ -11,7 +11,6 @@ import org.apache.commons.lang3
 import org.apache.commons.lang3.StringUtils
 import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
-import sparkAction.{Portfolio, PortfolioStr}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{JavaConversions, mutable}

@@ -29,7 +29,8 @@ object RealTimeCrmLineTimeIp {
 //    val uLMap = userIdLastTime.collect().toMap
 //    val broadcast = sc.broadcast(uLMap).value
     //对当前rdd
-    val buryRdd = oneRdd.map(_._2).map(BuryCleanCommon.cleanCommonToListBuryLogin(_))
+    val reRdd = oneRdd.repartition(1)
+    val buryRdd = reRdd.map(_._2).map(BuryCleanCommon.cleanCommonToListBuryLogin(_))
       .filter(_.size() > 0)
       .flatMap(_.toArray())
       .map(_.asInstanceOf[BuryLogin]).filter(_.logType == 1)

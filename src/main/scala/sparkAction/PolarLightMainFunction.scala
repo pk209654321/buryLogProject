@@ -18,6 +18,8 @@ object PolarLightMainFunction {
       val local: Boolean = LocalOrLine.judgeLocal()
 
       var sparkConf: SparkConf = new SparkConf().setAppName("PolarLightFunction")
+      sparkConf.set("spark.network.timeout", "3600")
+
       if (local) {
         //System.setProperty("HADOOP_USER_NAME", "wangyd")
         sparkConf = sparkConf.setMaster("local[*]")
@@ -26,11 +28,12 @@ object PolarLightMainFunction {
         config(sparkConf).
         enableHiveSupport().
         getOrCreate()
+      spark.sqlContext.setConf("spark.sql.shuffle.partitions","20")
       PolarLightAction.polarLightForActive(spark)
       PolarLightAction.polarLightForRegister(spark)
       spark.close()
     } catch {
-      case e: Throwable => e.printStackTrace();MailUtil.sendMail("极光效果推送警报", e.toString)
+      case e: Throwable => e.printStackTrace();MailUtil.sendMailNew("极光效果推送警报","推送失败")
     }
   }
 

@@ -70,7 +70,7 @@ object BuryMainFunction {
      // }
       spark.close()
     } catch {
-      case e: Throwable => MailUtil.sendMail("spark日志清洗调度错误", e.toString); e.printStackTrace()
+      case e: Throwable => e.printStackTrace();MailUtil.sendMailNew("spark日志清洗调度","清洗失败")
     }
   }
 

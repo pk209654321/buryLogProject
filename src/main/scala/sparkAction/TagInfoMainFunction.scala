@@ -1,10 +1,10 @@
 package sparkAction
 
+import conf.ConfigurationManager
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import scalaUtil.{LocalOrLine, MailUtil}
 import sparkAction.TagInfoForAction.TagInfoAction
-import sparkAction.polarLightForAction.PolarLightAction
 
 /**
   * ClassName TagInfoMainFunction
@@ -13,6 +13,7 @@ import sparkAction.polarLightForAction.PolarLightAction
   * Date 2019/5/31 10:35
   **/
 object TagInfoMainFunction {
+  private val hdfsPath: String = ConfigurationManager.getProperty("hdfs.log")
   def main(args: Array[String]): Unit = {
     try {
       val local: Boolean = LocalOrLine.judgeLocal()

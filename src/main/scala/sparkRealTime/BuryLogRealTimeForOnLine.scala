@@ -50,7 +50,7 @@ object BuryLogRealTimeForOnLine {
 
     val stream = if (fromOffsets.size == 0) { // 假设程序第一次启动
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
-    } else {//程序不是第一次启动
+    } else { //程序不是第一次启动
       var checkedOffset = Map[TopicAndPartition, Long]()
       val kafkaCluster = new KafkaCluster(kafkaParams)
       val earliestLeaderOffsets = kafkaCluster.getEarliestLeaderOffsets(fromOffsets.keySet)
@@ -77,14 +77,25 @@ object BuryLogRealTimeForOnLine {
       //实时处理
       RealTimeCrmLineTimeIp.doRealTimeCrmLineTimeIp(oneRdd,sc)
       val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
+
+      //偏移量新处理方式
+      val offsetInfos = offsetRanges.map(line => {
+        Seq(line.topic, load.getString("kafka.group.id"), line.partition, line.untilOffset)
+      })
+
+      NamedDB('offset).localTx{
+        implicit session =>
+          SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
+            .batch(offsetInfos:_*).apply()
+      }
       // 记录偏移量
-      offsetRanges.foreach(osr => {
-        NamedDB('offset).autoCommit { implicit session =>
+     /* offsetRanges.foreach(osr => {
+        NamedDB('offset).localTx { implicit session =>
           SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
             .bind(osr.topic, load.getString("kafka.group.id"), osr.partition, osr.untilOffset).update().apply()
         }
         // println(s"${osr.topic} ${osr.partition} ${osr.fromOffset} ${osr.untilOffset}")
-      })
+      })*/
     })
     // 启动程序，等待程序终止
     ssc.start()

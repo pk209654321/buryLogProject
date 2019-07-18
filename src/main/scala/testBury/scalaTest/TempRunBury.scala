@@ -6,11 +6,13 @@ import com.alibaba.fastjson.JSON
 import com.google.gson.Gson
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
 import sparkAction.BuryLogin
 import sparkAction.buryCleanUtil.BuryCleanCommon
+import sparkAction.polarLightForAction.PolarLightAction
 
 /**
   * ClassName TempRunBury
@@ -70,39 +72,23 @@ object TempRunBury {
 
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
-    //获取当前类的名称
-    val className = this.getClass.getSimpleName
-    var sparkConf: SparkConf = new SparkConf().setAppName(s"${className}")
+
+    var sparkConf: SparkConf = new SparkConf().setAppName("PolarLightFunction")
     if (local) {
-      System.setProperty("HADOOP_USER_NAME", "wangyd")
-      sparkConf = sparkConf.setMaster("local[2]")
+      //System.setProperty("HADOOP_USER_NAME", "wangyd")
+      sparkConf = sparkConf.setMaster("local[*]")
     }
-    val sc: SparkContext = new SparkContext(sparkConf)
-    sc.setLogLevel("WARN")
-    val hc: HiveContext = new HiveContext(sc)
-    //val hc: HiveContext = new HiveContext(sc)
-    val realPath ="E:\\desk\\日志"
-    val file: RDD[String] = sc.textFile(realPath, 1)
-    val filterBlank: RDD[String] = file.filter(line => {
-      //过滤为空的和有ip但是post传递为空的
-      StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
+    val spark = SparkSession.builder().
+      config(sparkConf).
+      //enableHiveSupport().
+      getOrCreate()
+    val value = spark.sparkContext.textFile("C:\\Users\\lenovo\\Desktop\\crm.log")
+    value.map(line=> {
+      val strings = line.split("&")
+      val ip = strings(1)
+      println(ip)
     })
-    val tempRddData: RDD[util.List[BuryLogin]] = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size()>0)
-    val rddOneObjcet: RDD[AnyRef] = tempRddData.flatMap(_.toArray())
-    var allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin])
-    allDataOneRdd.filter(line => {
-      val timeStr = BuryCleanCommon.getDayTimeByTime(line)
-      val str = timeStr.substring(0, 8)
-      if (str == "20190308") {
-        true
-      } else {
-        false
-      }
-    }).map(line => {
-      //JSON.toJSONString(line, SerializerFeature.WriteNullBooleanAsFalse)
-      val gson = new Gson()
-      val value = gson.toJson(line)
-      value
-    }).repartition(1).saveAsTextFile("E:\\desk\\日志out")
+    value.collect()
+    spark.close()
   }
 }

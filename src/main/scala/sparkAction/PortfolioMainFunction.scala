@@ -32,7 +32,7 @@ object PortfolioMainFunction {
       var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
       sparkConf.set("spark.rpc.message.maxSize", "256")
       //sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
-      sparkConf.set("spark.network.timeout","3600")
+      sparkConf.set("spark.network.timeout", "3600")
       sparkConf.set("spark.debug.maxToStringFields", "100")
       if (local) {
         System.setProperty("HADOOP_USER_NAME", "wangyd")
@@ -45,7 +45,7 @@ object PortfolioMainFunction {
         .getOrCreate()
       spark.sparkContext.setLogLevel("WARN")
       val diffDay: Int = args(0).toInt
-      val dataMysql = getMysqlDataAll(diffDay)
+      val dataMysql = getMysqlDataNew(diffDay)
       //用户自选股原始信息
       val portfolioStrs = getPortfolioFromMysql(dataMysql)
       val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
@@ -69,39 +69,41 @@ object PortfolioMainFunction {
       val many = spark.sparkContext.parallelize(portfolioBeans, 200)
       val groups = spark.sparkContext.parallelize(portGroupInfoes, 200)
       val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
-      val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls,20)
-      val userPushRdd = spark.sparkContext.parallelize(userPushData,20)
-      UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd,spark)
-      PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd,spark)
+      val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls, 20)
+      val userPushRdd = spark.sparkContext.parallelize(userPushData, 20)
+      UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd, spark)
+      PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
       PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
       spark.close()
     } catch {
-      case e: Throwable => e.printStackTrace(); MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警|用户开关设置", "失败")
+      case e: Throwable => e.printStackTrace(); MailUtil.sendMailNew("spark用户自选股解析入库|分享控件|用户股票预警|用户开关设置", "解析失败")
     }
   }
 
   //拉取masql 中的数据
 
-  def getMysqlData(diffDay:Int) = {
+  /*def getMysqlData(diffDay:Int) = {
     DBs.setupAll()
     val peoples = NamedDB('mysql).readOnly { implicit session =>
       SQL(s"select * from t_portfolio where ADDDATE(CURDATE(),INTERVAL  ${diffDay} DAY)=date(updatetime)").map(rs => Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))).list().apply()
     }
     peoples
-  }
+  }*/
 
-  def getMysqlDataAll(diffDay:Int) = {
-    DBs.setupAll()
-    val peoples = NamedDB('mysql).readOnly { implicit session =>
-      SQL(s"select * from t_portfolio").map(rs => Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))).list().apply()
-    }
-    peoples
-  }
+  /* def getMysqlDataAll(diffDay:Int) = {
+     DBs.setupAll()
+     val peoples = NamedDB('mysql).readOnly { implicit session =>
+       SQL(s"select * from t_portfolio").map(rs =>
 
-  def getMysqlDataNew(diffDay:Int) = {
+         Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))).list().apply()
+     }
+     peoples
+   }*/
+
+  def getMysqlDataNew(diffDay: Int) = {
     DBs.setupAll()
     val peoples = NamedDB('mysql).readOnly { implicit session =>
       SQL(s"select * from t_portfolio").map(rs => {
@@ -111,9 +113,9 @@ object PortfolioMainFunction {
         val stream = new BaseDecodeStream(valueStr)
         val list = new ProSecInfoList()
         list.readFrom(stream)
-        val sValue = JSON.toJSONString(list, SerializerFeature.WriteMapNullValue)
+        //val sValue = JSON.toJSONString(list, SerializerFeature.WriteMapNullValue)
         //Portfolio(rs.string("sKey"), rs.bytes("sValue"), rs.string("updatetime"))
-        PortfolioStr(keyStr,sValue,timeStr)
+        PortfolioList(keyStr, list, timeStr)
       }).list().apply()
     }
     peoples
@@ -269,14 +271,14 @@ object PortfolioMainFunction {
     })
   }
 
-  def getGroupInfoFromMysql(dataMysql: scala.List[Portfolio]) = {
+  def getGroupInfoFromMysql(dataMysql: scala.List[PortfolioList]) = {
     dataMysql.map(one => {
       val key = one.sKey
-      val value = one.sValue
+      val list = one.list
       val updatetime = one.updatetime
-      val stream = new BaseDecodeStream(value)
-      val list = new ProSecInfoList()
-      list.readFrom(stream)
+      //val stream = new BaseDecodeStream(value)
+      //val list = new ProSecInfoList()
+      //list.readFrom(stream)
       val iVersion = list.iVersion
       val groupInfo = list.getVGroupInfo
       val gip = groupInfo.toArray()
@@ -328,24 +330,17 @@ object PortfolioMainFunction {
     })
   }
 
-  def getPortfolioFromMysql(dataMysql: scala.List[Portfolio]): List[PortfolioStr] = {
+  def getPortfolioFromMysql(dataMysql: scala.List[PortfolioList]): List[PortfolioStr] = {
     val portfolioStrs = dataMysql.map(one => {
-      val value = one.sValue
-      val stream = new BaseDecodeStream(value)
-      val list = new ProSecInfoList()
-      list.readFrom(stream)
-      val sValue = JSON.toJSONString(list, SerializerFeature.WriteMapNullValue)
+      val sValue = JSON.toJSONString(one.list, SerializerFeature.WriteMapNullValue)
       PortfolioStr(one.sKey, sValue, one.updatetime)
     })
     portfolioStrs
   }
 
-  def getManyFieldPortfolio(dataMysql: scala.List[Portfolio]) = {
+  def getManyFieldPortfolio(dataMysql: scala.List[PortfolioList]) = {
     val listTup = dataMysql.map(one => {
-      val value = one.sValue
-      val stream = new BaseDecodeStream(value)
-      val list = new ProSecInfoList()
-      list.readFrom(stream)
+      val list = one.list
       val iVersion = list.iVersion
       val vProSecInfo = list.getVProSecInfo
       val portfolioBean = new PortfolioBean
@@ -392,7 +387,7 @@ object PortfolioMainFunction {
           portfolioBean2.setsDKAlert(info.isDKAlert)
           portfolioBean2.setsDtSecCode(info.getSDtSecCode match {
             case "" => null
-            case _=> info.getSDtSecCode
+            case _ => info.getSDtSecCode
           })
           portfolioBean2.setsHold(info.isHold)
           portfolioBean2.setsName(info.getSName match {
@@ -416,7 +411,7 @@ object PortfolioMainFunction {
   }
 }
 
-case class Portfolio(var sKey: String, var sValue: Array[Byte], var updatetime: String)
+case class PortfolioList(var sKey: String, var list: ProSecInfoList, var updatetime: String)
 
 case class PortfolioStr(var sKey: String, var sValue: String, var updatetime: String)
 

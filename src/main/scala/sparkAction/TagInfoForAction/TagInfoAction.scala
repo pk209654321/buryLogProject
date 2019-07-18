@@ -54,6 +54,7 @@ object TagInfoAction {
       (toInt,"session_id",new Date())
     }).repartition(1)
 
+    //scalalike mysql批量插入
     userSession.foreachPartition(it => {
       DBs.setupAll()
       val beans = it.map(line => {
