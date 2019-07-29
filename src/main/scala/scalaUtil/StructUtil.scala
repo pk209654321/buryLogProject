@@ -241,4 +241,11 @@ object StructUtil {
     StructField("mMsgPushButton",MapType(IntegerType,IntegerType)),
       StructField("updatetime",StringType)
   ))
+
+  val structAnswer=StructType(List(
+    StructField("id",LongType),
+    StructField("user_id",StringType),
+    StructField("ans_array",ArrayType(StringType)),
+    StructField("update_time",LongType)
+  ))
 }

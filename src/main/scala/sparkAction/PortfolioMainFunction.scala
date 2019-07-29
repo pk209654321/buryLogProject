@@ -14,7 +14,7 @@ import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc.{NamedDB, SQL}
 import scalikejdbc.config.DBs
 import sparkAction.PortfolioMysqlData.PortfolioMysqlDataObject
-import sparkAction.portfolioHive.{PortfolioProSecInfoHiveInsertObject, UserPushButtonInsertToHive}
+import sparkAction.portfolioHive.{NfRiskAssessmentUserCommitRecordToHive, PortfolioProSecInfoHiveInsertObject, UserPushButtonInsertToHive}
 
 import scala.collection.JavaConversions._
 import scala.collection.{JavaConversions, mutable}
@@ -46,37 +46,45 @@ object PortfolioMainFunction {
       spark.sparkContext.setLogLevel("WARN")
       val diffDay: Int = args(0).toInt
       val dataMysql = getMysqlDataNew(diffDay)
+      //========================================================================================
+
+      //========================================================================================
+
+      //========================================================================================
+
+      //========================================================================================
+
+      //========================================================================================
       //用户自选股原始信息
       val portfolioStrs = getPortfolioFromMysql(dataMysql)
+      val portfolias = spark.sparkContext.parallelize(portfolioStrs, 100)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
+      //自选股保存的证券信息
       val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
+      val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)
+      val many = spark.sparkContext.parallelize(portfolioBeans, 100)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
       //用户自选股组信息
       val groupInfo = getGroupInfoFromMysql(dataMysql)
-      //自选股保存的证券信息
-      val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)
-      //用户自选股组信息
       val portGroupInfoes = groupInfo.flatMap(_.toSeq)
-      //========================================================================================
-      //获取分享控件
+      val groups = spark.sparkContext.parallelize(portGroupInfoes, 100)
+      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
+    //获取分享控件
       val shareManies = getShare.flatMap(_.toSeq)
-      //========================================================================================
+      val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
+      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
       //获取预警数据
       val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
-      //========================================================================================
+      val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls, 20)
+      PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)
       //获取用户开关数据
       val userPushData = UserPushButtonInsertToHive.getUserPushData()
-      //========================================================================================
-      val portfolias = spark.sparkContext.parallelize(portfolioStrs, 200)
-      val many = spark.sparkContext.parallelize(portfolioBeans, 200)
-      val groups = spark.sparkContext.parallelize(portGroupInfoes, 200)
-      val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
-      val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls, 20)
       val userPushRdd = spark.sparkContext.parallelize(userPushData, 20)
       UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd, spark)
-      PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
-      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
+      /*//获取答题数据
+      val answerData = NfRiskAssessmentUserCommitRecordToHive.getUserAnsFromMysql()
+      val answerRdd = spark.sparkContext.parallelize(answerData,20)
+      NfRiskAssessmentUserCommitRecordToHive.insertAnswerToHive(answerRdd,spark)*/
       spark.close()
     } catch {
       case e: Throwable => e.printStackTrace(); MailUtil.sendMailNew("spark用户自选股解析入库|分享控件|用户股票预警|用户开关设置", "解析失败")

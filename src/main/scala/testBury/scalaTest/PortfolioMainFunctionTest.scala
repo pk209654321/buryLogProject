@@ -1,40 +1,25 @@
 package testBury.scalaTest
 
-import java.util
-
-import bean.shareControl.{BlockInfo, ShareMany, SharePageInfo}
-import bean.userChoiceStock.{PortGroupInfo, PortfolioBean}
-import com.alibaba.fastjson.JSON
-import com.alibaba.fastjson.serializer.SerializerFeature
-import com.dengtacj.bec.{GroupInfo, ProSecInfo, ProSecInfoList}
-import com.qq.tars.protocol.tars.BaseDecodeStream
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
-import scalikejdbc.{NamedDB, SQL}
-import scalikejdbc.config.DBs
-import sparkAction.PortfolioMainFunction._
-import sparkAction.PortfolioMysqlData.PortfolioMysqlDataObject
-import sparkAction.portfolioHive.{PortfolioProSecInfoHiveInsertObject, UserPushButtonInsertToHive}
+import sparkAction.AnswersBean
+import sparkAction.portfolioHive.{NfRiskAssessmentUserCommitRecordToHive, PortfolioProSecInfoHiveInsertObject, UserPushButtonInsertToHive}
 
-import scala.collection.JavaConversions._
-import scala.collection.{JavaConversions, mutable}
 
 /**
   * ClassName PortfolioMainFunction
-  * Description TODO 用户自选股信息接入,分享控件信息接入,用户股票预警
+  * Description TODO 解析答题数据
   * Author lenovo
   * Date 2019/2/12 9:16
   **/
-object PortfolioMainFunctionTest {
+object UserAnswerObjectTest {
   def main(args: Array[String]): Unit = {
     try {
       val local: Boolean = LocalOrLine.judgeLocal()
-      var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
+      var sparkConf: SparkConf = new SparkConf().setAppName("UserAnswerObjectTest")
       sparkConf.set("spark.rpc.message.maxSize", "256")
-      sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
-      sparkConf.set("spark.network.timeout","3600")
+      sparkConf.set("spark.network.timeout", "3600")
       sparkConf.set("spark.debug.maxToStringFields", "100")
       if (local) {
         System.setProperty("HADOOP_USER_NAME", "wangyd")
@@ -46,15 +31,16 @@ object PortfolioMainFunctionTest {
         .enableHiveSupport()
         .getOrCreate()
       spark.sparkContext.setLogLevel("WARN")
-      //val diffDay: Int = args(0).toInt
       //获取用户开关数据
-      val userPushData = UserPushButtonInsertToHive.getUserPushData()
       //========================================================================================
-      val userPushRdd: RDD[(Long, mutable.Map[Integer, Integer], String)] = spark.sparkContext.parallelize(userPushData,20)
-      UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd,spark)
+      //val answerData = NfRiskAssessmentUserCommitRecordToHive.getUserAnsFromMysql()
+      //val answerRdd = spark.sparkContext.parallelize(answerData, 1)
+      import spark.implicits._
+      val dataFrame = spark.sql("select  ID,ACCOUNT_ID,USER_ANS,UPDATE_TIME from db_sscf.nf_risk_assessment_user_commit_record")
+      spark.sql("select * from table_temp ").show()
       spark.close()
     } catch {
-      case e: Throwable => e.printStackTrace(); //MailUtil.sendMail("spark用户自选股解析入库|分享控件|用户股票预警", "失败")
+      case e: Throwable => e.printStackTrace(); //MailUtil.sendMailNew("spark答题数据", "解析失败-----"+e.getMessage)
     }
   }
 }
