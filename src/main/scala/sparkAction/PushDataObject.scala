@@ -3,7 +3,7 @@ package sparkAction
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import scalaUtil.{LocalOrLine, MailUtil}
-import sparkAction.portfolioHive.NfRiskAssessmentUserCommitRecordToHive
+import sparkAction.portfolioHive.{GexinTaskMessageRelation, NfRiskAssessmentUserCommitRecordToHive}
 
 import scala.collection.mutable.ListBuffer
 
@@ -34,10 +34,10 @@ object PushDataObject {
       import spark.implicits._
       val dataFrame = spark.sql("select msg_id,transmission_content from  db_message.gexin_task_message_relation")
       val ansData = dataFrame.as[MsgContentData]
-      //NfRiskAssessmentUserCommitRecordToHive.insertAnswerNew(ansData,spark)
+      GexinTaskMessageRelation.insertPushDataToHive(ansData,spark)
       spark.close()
     } catch {
-      case e: Throwable => e.printStackTrace(); MailUtil.sendMailNew("spark答题数据", "解析失败-----"+e.getMessage)
+      case e: Throwable => e.printStackTrace(); //MailUtil.sendMailNew("spark答题数据", "解析失败-----"+e.getMessage)
     }
   }
 }

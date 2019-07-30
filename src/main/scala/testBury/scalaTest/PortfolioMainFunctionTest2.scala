@@ -36,48 +36,6 @@ object PortfolioMainFunctionTest2 {
         .enableHiveSupport()
         .getOrCreate()
       spark.sparkContext.setLogLevel("WARN")
-      import spark.implicits._
-      val dataFrame = spark.sql("select skey,svalue,updatetime from db_op.t_portfolio_original").as[SelfBean]
-      val value = dataFrame.map(one => {
-        val svalue = one.svalue
-        val bytes = RandomCharData.hexStringToByteArray(svalue)
-        val stream = new BaseDecodeStream(bytes)
-        val list = new ProSecInfoList()
-        list.readFrom(stream)
-        val vProSecInfo = list.getVProSecInfo
-        val array=new ArrayBuffer[Prosecinfo]()
-        for (i <- (0 until vProSecInfo.size())) {
-          val proSecInfo = vProSecInfo.get(i)
-          val stCommentInfo = proSecInfo.getStCommentInfo
-          val prosecinfo = Prosecinfo(proSecInfo.getBRecvAnnounce,
-            proSecInfo.getBRecvResearch,
-            proSecInfo.getFChipHighPrice,
-            proSecInfo.getFChipLowPrice,
-            proSecInfo.getFDecreasesPer,
-            proSecInfo.getFHighPrice,
-            proSecInfo.getFIncreasePer,
-            proSecInfo.getFLowPrice,
-            proSecInfo.getFMainChipHighPrice,
-            proSecInfo.getFMainChipLowPrice,
-            proSecInfo.getICreateTime,
-            proSecInfo.getIUpdateTime,
-            list.getIVersion,
-            proSecInfo.isAiAlert,
-            proSecInfo.isDel,
-            proSecInfo.isDKAlert,
-            proSecInfo.getSDtSecCode,
-            proSecInfo.isHold,
-            one.skey,
-            proSecInfo.getSName,
-            stCommentInfo.getICreateTime,
-            stCommentInfo.getIUpdateTime,
-            stCommentInfo.getSComment,
-            proSecInfo.getVBroadcastTime,
-            proSecInfo.getVStrategyId,
-            one.updatetime)
-          array.+=(prosecinfo)
-        }
-      })
       spark.close()
     } catch {
       case e: Throwable => e.printStackTrace(); //MailUtil.sendMailNew("spark答题数据", "解析失败-----"+e.getMessage)
