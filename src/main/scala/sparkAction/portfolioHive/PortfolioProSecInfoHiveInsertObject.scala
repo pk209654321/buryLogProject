@@ -61,30 +61,9 @@ object PortfolioProSecInfoHiveInsertObject {
     val portRow = portData.map(line => {
       Row(line.sKey, line.sValue, line.updatetime)
     })
-    val two = dayFlag - 1
     val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortfolio).repartition(1).persist()
     createDataFrame.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    val sqlStr =
-      s"""
-         |
-         | select
-         |   a.sKey,
-         |   a.sValue,
-         |   a.updatetime
-         | from ${TABLE} a
-         | left join  tempTable b
-         | on a.sKey=b.sKey
-         | where a.hp_stat_date=date_add(current_date(),${two})
-         | and b.sValue is null
-         |
-         | UNION ALL
-         |
-         | select * from tempTable
-         |
-      """.stripMargin
-    //spark.sql(sqlStr).repartition(1).createOrReplaceTempView("tempTable2")
-    //spark.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable2")
     spark.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 
@@ -139,57 +118,13 @@ object PortfolioProSecInfoHiveInsertObject {
         line.getStCommentInfo_sComment,
         broadCastTime,
         strategyId,
-        line.getUpdateTime
+        line.getUpdateTime,
+        line.getlUptTimeExt()
       )
     })
     val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortfolioProSecInfo).repartition(1).persist()
     createDataFrame.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    val two = dayFlag - 1
-    val sqlStr =
-      s"""
-         | select
-         |   a.bRecvAnnounce,
-         |   a.bRecvResearch,
-         |   a.fChipHighPrice,
-         |   a.fChipLowPrice,
-         |   a.fDecreasesPer,
-         |   a.fHighPrice,
-         |   a.fIncreasePer,
-         |   a.fLowPrice,
-         |   a.fMainChipHighPrice,
-         |   a.fMainChipLowPrice,
-         |   a.iCreateTime,
-         |   a.iUpdateTime,
-         |   a.iVersion,
-         |   a.isAiAlert,
-         |   a.isDel,
-         |   a.isDKAlert,
-         |   a.sDtSecCode,
-         |   a.isHold,
-         |   a.sKey,
-         |   a.sName,
-         |   a.stCommentInfo_iCreateTime,
-         |   a.stCommentInfo_iUpdateTime,
-         |   a.stCommentInfo_sComment,
-         |   a.vBroadcastTime,
-         |   a.vStrategyId,
-         |   a.updateTime
-         |
-         |   from ${TABLE_MANY} a
-         |   left join  tempTable b
-         |   on a.sKey=b.sKey
-         |   where a.hp_stat_date=date_add(current_date(),${two})
-         |   and b.updateTime is null
-         |
-         |    UNION ALL
-         |
-         | select * from tempTable
-         |
-      """.stripMargin
-
-    //spark.sql(sqlStr).repartition(1).createOrReplaceTempView("tempTable2")
-    //spark.sql(s"insert overwrite  table ${TABLE_MANY} partition(hp_stat_date='${timeStr}') select * from tempTable2")
     spark.sql(s"insert overwrite  table ${TABLE_MANY} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 
@@ -205,39 +140,14 @@ object PortfolioProSecInfoHiveInsertObject {
         line.getGs_sDtSecCode,
         line.getiVersion(),
         line.getsKey(),
-        line.getUpdateTime
+        line.getUpdateTime,
+        line.getGs_lUptTimeExt,
+        line.getGi_lUptTimeExt
       )
     })
     val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortGroupInfo).repartition(1).persist()
     createDataFrame.createOrReplaceTempView("tempTable")
-    val two = dayFlag - 1
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    val sqlStr =
-      s"""
-         | select
-         |   a.gi_iCreateTime,
-         |   a.gi_isDel,
-         |   a.gi_iUpdateTime,
-         |   a.gi_sGroupName,
-         |   a.gs_isDel,
-         |   a.gs_iUpdateTime,
-         |   a.gs_sDtSecCode,
-         |   a.iVersion,
-         |   a.sKey,
-         |   a.updateTime
-         | from ${TABLE_GROUP} a
-         | left join  tempTable b
-         | on a.sKey=b.sKey
-         | where a.hp_stat_date=date_add(current_date(),${two})
-         | and b.updateTime is null
-         |
-         | UNION ALL
-         |
-         | select * from tempTable
-         |
-      """.stripMargin
-    //spark.sql(sqlStr).repartition(1).createOrReplaceTempView("tempTable2")
-    //spark.sql(s"insert overwrite  table ${TABLE_GROUP} partition(hp_stat_date='${timeStr}') select * from tempTable2")
     spark.sql(s"insert overwrite  table ${TABLE_GROUP} partition(hp_stat_date='${timeStr}') select * from tempTable")
   }
 

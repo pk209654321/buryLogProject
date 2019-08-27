@@ -126,6 +126,14 @@ object NfRiskAssessmentUserCommitRecordToHive {
 
 
   def getRealNum(num: String) = {
+    /**
+    　　* @Description: TODO  将字符串数字转换成数字数组
+    　　* @param [num]
+    　　* @return int[]
+    　　* @throws
+    　　* @author lenovo
+    　　* @date 2019/7/30 16:58
+    　　*/
     val ints = new Array[Int](num.length)
     for (i <- (0 until num.length)) {
       ints(i) = String.valueOf(num.charAt(i)).toInt

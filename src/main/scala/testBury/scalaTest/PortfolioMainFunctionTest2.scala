@@ -36,6 +36,7 @@ object PortfolioMainFunctionTest2 {
         .enableHiveSupport()
         .getOrCreate()
       spark.sparkContext.setLogLevel("WARN")
+
       spark.close()
     } catch {
       case e: Throwable => e.printStackTrace(); //MailUtil.sendMailNew("spark答题数据", "解析失败-----"+e.getMessage)

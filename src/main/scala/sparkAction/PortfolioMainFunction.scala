@@ -2,11 +2,11 @@ package sparkAction
 
 import java.util
 
+import bean.selectStock.ProSecInfoList
 import bean.shareControl.{BlockInfo, ShareMany, SharePageInfo}
 import bean.userChoiceStock.{PortGroupInfo, PortfolioBean}
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
-import com.dengtacj.bec.{GroupInfo, ProSecInfo, ProSecInfoList}
 import com.qq.tars.protocol.tars.BaseDecodeStream
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
@@ -27,68 +27,62 @@ import scala.collection.{JavaConversions, mutable}
   **/
 object PortfolioMainFunction {
   def main(args: Array[String]): Unit = {
-    try {
-      val local: Boolean = LocalOrLine.judgeLocal()
-      var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
-      sparkConf.set("spark.rpc.message.maxSize", "256")
-      //sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
-      sparkConf.set("spark.network.timeout", "3600")
-      sparkConf.set("spark.debug.maxToStringFields", "100")
-      if (local) {
-        System.setProperty("HADOOP_USER_NAME", "wangyd")
-        sparkConf = sparkConf.setMaster("local[*]")
-      }
-      //val sc: SparkContext = new SparkContext(sparkConf)
-      val spark = SparkSession.builder()
-        .config(sparkConf)
-        .enableHiveSupport()
-        .getOrCreate()
-      spark.sparkContext.setLogLevel("WARN")
-      val diffDay: Int = args(0).toInt
-      val dataMysql = getMysqlDataNew(diffDay)
-      //========================================================================================
-
-      //========================================================================================
-
-      //========================================================================================
-
-      //========================================================================================
-
-      //========================================================================================
-      //用户自选股原始信息
-      val portfolioStrs = getPortfolioFromMysql(dataMysql)
-      val portfolias = spark.sparkContext.parallelize(portfolioStrs, 100)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
-      //自选股保存的证券信息
-      val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
-      val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)
-      val many = spark.sparkContext.parallelize(portfolioBeans, 100)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
-      //用户自选股组信息
-      val groupInfo = getGroupInfoFromMysql(dataMysql)
-      val portGroupInfoes = groupInfo.flatMap(_.toSeq)
-      val groups = spark.sparkContext.parallelize(portGroupInfoes, 100)
-      PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
-    //获取分享控件
-      val shareManies = getShare.flatMap(_.toSeq)
-      val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
-      PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
-      //获取预警数据
-      val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
-      val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls, 20)
-      PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)
-      //获取用户开关数据
-      val userPushData = UserPushButtonInsertToHive.getUserPushData()
-      val userPushRdd = spark.sparkContext.parallelize(userPushData, 20)
-      UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd, spark)
-      /*//获取答题数据
-      val answerData = NfRiskAssessmentUserCommitRecordToHive.getUserAnsFromMysql()
-      val answerRdd = spark.sparkContext.parallelize(answerData,20)
-      NfRiskAssessmentUserCommitRecordToHive.insertAnswerToHive(answerRdd,spark)*/
-      spark.close()
-    } catch {
-      case e: Throwable => e.printStackTrace(); MailUtil.sendMailNew("spark用户自选股解析入库|分享控件|用户股票预警|用户开关设置", "解析失败")
+    val local: Boolean = LocalOrLine.judgeLocal()
+    var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
+    sparkConf.set("spark.rpc.message.maxSize", "256")
+    //sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
+    sparkConf.set("spark.network.timeout", "3600")
+    sparkConf.set("spark.debug.maxToStringFields", "100")
+    if (local) {
+      System.setProperty("HADOOP_USER_NAME", "wangyd")
+      sparkConf = sparkConf.setMaster("local[*]")
     }
+    //val sc: SparkContext = new SparkContext(sparkConf)
+    val spark = SparkSession.builder()
+      .config(sparkConf)
+      .enableHiveSupport()
+      .getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
+    spark.sparkContext.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false")
+    val diffDay: Int = args(0).toInt
+    val dataMysql = getMysqlDataNew(diffDay)
+    //========================================================================================
+
+    //========================================================================================
+
+    //========================================================================================
+
+    //========================================================================================
+
+    //========================================================================================
+    //用户自选股原始信息
+    val portfolioStrs = getPortfolioFromMysql(dataMysql)
+    val portfolias = spark.sparkContext.parallelize(portfolioStrs, 100)
+    PortfolioProSecInfoHiveInsertObject.insertPortfolioToHive(portfolias, spark, diffDay)
+    //自选股保存的证券信息
+    val manyFieldPortfolio = getManyFieldPortfolio(dataMysql)
+    val portfolioBeans: List[PortfolioBean] = manyFieldPortfolio.flatMap(_.toSeq)
+    val many = spark.sparkContext.parallelize(portfolioBeans, 100)
+    PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
+    //用户自选股组信息
+   /* val groupInfo = getGroupInfoFromMysql(dataMysql)
+    val portGroupInfoes = groupInfo.flatMap(_.toSeq)
+    val groups = spark.sparkContext.parallelize(portGroupInfoes, 100)
+    PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)*/
+    //获取分享控件
+   /* val shareManies = getShare.flatMap(_.toSeq)
+    val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
+    PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)*/
+    //获取预警数据
+   /* val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
+    val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls, 20)
+    PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)*/
+    //获取用户开关数据
+   /* val userPushData = UserPushButtonInsertToHive.getUserPushData()
+    val userPushRdd = spark.sparkContext.parallelize(userPushData, 20)
+    UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd, spark)*/
+
+    spark.close()
   }
 
   //拉取masql 中的数据
@@ -308,6 +302,7 @@ object PortfolioMainFunction {
           portGroupInfo.setiVersion(iVersion)
           portGroupInfo.setsKey(key)
           portGroupInfo.setUpdateTime(updatetime)
+          portGroupInfo.setGi_lUptTimeExt(gi.getLUptTimeExt);
           if (groupSecInfoes != null && groupSecInfoes.size > 0) {
             groupSecInfoes.foreach(gsInfo => {
               var portGroupInfo2 = new PortGroupInfo
@@ -327,6 +322,7 @@ object PortfolioMainFunction {
               portGroupInfo2.setGs_isDel(gs_del)
               portGroupInfo2.setGs_iUpdateTime(gs_iUpdateTime)
               portGroupInfo2.setGs_sDtSecCode(gs_sDtSecCode)
+              portGroupInfo2.setGs_lUptTimeExt(gsInfo.getLUptTimeExt)
               array.+=(portGroupInfo2)
             })
           } else {
@@ -407,6 +403,7 @@ object PortfolioMainFunction {
           portfolioBean2.setStCommentInfo_sComment(sComment)
           portfolioBean2.setvBroadcastTime(vBroadcastTime)
           portfolioBean2.setvStrategyId(vStrategyId)
+          portfolioBean2.setlUptTimeExt(info.getLUptTimeExt)
           array.+=(portfolioBean2)
 
         }

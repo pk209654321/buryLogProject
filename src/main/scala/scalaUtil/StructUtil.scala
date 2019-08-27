@@ -162,7 +162,8 @@ object StructUtil {
       StructField("stCommentInfo_sComment", StringType),
       StructField("vBroadcastTime",ArrayType(IntegerType)),
       StructField("vStrategyId",ArrayType(IntegerType)),
-      StructField("updateTime", StringType)
+      StructField("updateTime", StringType),
+      StructField("lUptTimeExt", LongType)
     ))
 
   val structPortGroupInfo=StructType(List(
@@ -175,7 +176,9 @@ object StructUtil {
     StructField("gs_sDtSecCode", StringType),
     StructField("iVersion", IntegerType),
     StructField("sKey", StringType),
-    StructField("updateTime", StringType)
+    StructField("updateTime", StringType),
+    StructField("gs_lUptTimeExt", StringType),
+    StructField("gi_lUptTimeExt", StringType)
   ))
 
   val structShareMany=StructType(List(

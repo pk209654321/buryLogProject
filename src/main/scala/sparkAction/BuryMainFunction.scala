@@ -22,56 +22,49 @@ object BuryMainFunction {
   private val dict: String = ConfigurationManager.getProperty("stock.web.dict")
 
   def main(args: Array[String]): Unit = {
-    try {
-      val diffDay: Int = args(0).toInt
-      val local: Boolean = LocalOrLine.judgeLocal()
+    val diffDay: Int = args(0).toInt
+    val local: Boolean = LocalOrLine.judgeLocal()
 
-      var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
-      if (local) {
-        //System.setProperty("HADOOP_USER_NAME", "wangyd")
-        sparkConf = sparkConf.setMaster("local[*]")
-      }
-      /*
-      暂停使用
-      val sc: SparkContext = new SparkContext(sparkConf)
-      sc.setLogLevel("WARN")
-      sc.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")*/
-      val spark = SparkSession
-        .builder()
-        .config(sparkConf)
-        .enableHiveSupport()
-        .getOrCreate()
-      spark.sparkContext.setLogLevel("WARN")
-      spark.sparkContext.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")
-      //for (dayFlag <- (diffDay to -1)) { //按天数循环
-        val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
-        //val realPath="E:\\desk\\日志out\\rzout"
-        val file: RDD[String] = spark.sparkContext.textFile(realPath, 1)
-        val dictRdd = spark.sparkContext.textFile(dict).collect()
-        val dictBrod = spark.sparkContext.broadcast(dictRdd).value
-        val filterBlank: RDD[String] = file.filter(line => {
-          //过滤为空的和有ip但是post传递为空的
-          StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
-        })
-        //清洗去掉不规则字符
-        val allData = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size() > 0)
-        val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
-        val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).filter(one => {
-          val line = one.line
-          StringUtils.isNotBlank(line)
-        })
-        val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
-        //老规则数据清洗入库
-        oldVersionCleanInsert(oldDataOneRdd, spark, diffDay)
-        //新规则数据+老规则数据清洗入库
-        newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod)
-        //测试
-        //testFun2(allDataOneRdd,spark,0,dictBrod)
-     // }
-      spark.close()
-    } catch {
-      case e: Throwable => e.printStackTrace();MailUtil.sendMailNew("spark日志清洗调度","清洗失败")
+    var sparkConf: SparkConf = new SparkConf().setAppName("BuryMainFunction")
+    if (local) {
+      //System.setProperty("HADOOP_USER_NAME", "wangyd")
+      sparkConf = sparkConf.setMaster("local[*]")
     }
+    /*
+    暂停使用
+    val sc: SparkContext = new SparkContext(sparkConf)
+    sc.setLogLevel("WARN")
+    sc.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false")*/
+    val spark = SparkSession
+      .builder()
+      .config(sparkConf)
+      .enableHiveSupport()
+      .getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
+    spark.sparkContext.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false")
+    //for (dayFlag <- (diffDay to -1)) { //按天数循环
+    val realPath = hdfsPath + DateScalaUtil.getPreviousDateStr(diffDay, 2)
+    //val realPath="E:\\desk\\日志out\\rzout"
+    val file: RDD[String] = spark.sparkContext.textFile(realPath, 1)
+    val dictRdd = spark.sparkContext.textFile(dict).collect()
+    val dictBrod = spark.sparkContext.broadcast(dictRdd).value
+    val filterBlank: RDD[String] = file.filter(line => {
+      //过滤为空的和有ip但是post传递为空的
+      StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
+    })
+    //清洗去掉不规则字符
+    val allData = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size() > 0)
+    val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
+    val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).filter(one => {
+      val line = one.line
+      StringUtils.isNotBlank(line)
+    })
+    val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
+    //老规则数据清洗入库
+    oldVersionCleanInsert(oldDataOneRdd, spark, diffDay)
+    //新规则数据+老规则数据清洗入库
+    newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod)
+    spark.close()
   }
 
   //清洗老日志
@@ -136,8 +129,8 @@ object BuryMainFunction {
     //清洗出股掌柜手机客户端行为数据
     BuryPhoneClientTableStringIp.cleanPhoneClientData(filterClient, spark, dayFlag)
     //-------------------------------------------------------------------------------------------------------
-    val filterDeviceInfos = DataRddList.filter(_.logType==3)
-    BuryDeviceInfosStringIp.cleanBuryDeviceInfosStringIp(filterDeviceInfos,spark,dayFlag)
+    val filterDeviceInfos = DataRddList.filter(_.logType == 3)
+    BuryDeviceInfosStringIp.cleanBuryDeviceInfosStringIp(filterDeviceInfos, spark, dayFlag)
     //val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
     //BuryPcClientTableMapIp.cleanPcClientData(pcClient, hc, dayFlag)

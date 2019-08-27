@@ -20,6 +20,25 @@ public class PortGroupInfo implements Serializable {
     private Integer gs_iUpdateTime;
     private Boolean gs_isDel;
 
+    private long gi_lUptTimeExt=0;
+    private long gs_lUptTimeExt=0;
+
+    public long getGs_lUptTimeExt() {
+        return gs_lUptTimeExt;
+    }
+
+    public void setGs_lUptTimeExt(long gs_lUptTimeExt) {
+        this.gs_lUptTimeExt = gs_lUptTimeExt;
+    }
+
+    public long getGi_lUptTimeExt() {
+        return gi_lUptTimeExt;
+    }
+
+    public void setGi_lUptTimeExt(long gi_lUptTimeExt) {
+        this.gi_lUptTimeExt = gi_lUptTimeExt;
+    }
+
     public String getsKey() {
         return sKey;
     }

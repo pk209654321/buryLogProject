@@ -17,7 +17,8 @@ import scala.collection.mutable.ListBuffer
   * Date 2019/7/19 14:41
   **/
 
-case class PushDataResultToHive(msg_id: String,
+case class PushDataResultToHive(msg_id:String,
+                                gexin_task_id: String,
                                 vtData:String,
                                 ePushDataType:Int,
                                 sBusinessId:String,
@@ -47,7 +48,14 @@ object GexinTaskMessageRelation {
     import spark.implicits._
     val dataFinal = ansData.map(one => {
       val temp=null
-      val msg_id = one.msg_id
+      val gexin_task_id = one.gexin_task_id match {
+        case "" => temp
+        case _ => one.gexin_task_id
+      }
+      val msg_id = one.msg_id match {
+        case "" => null
+        case _ => one.msg_id
+      }
       try {
         val transmission_content = one.transmission_content
         var pushData = JSON.parseObject(transmission_content, classOf[PushData])
@@ -68,10 +76,9 @@ object GexinTaskMessageRelation {
           case null => null
           case _ => new String(pushData.getVtData,"utf-8")
         }
-        PushDataResultToHive(msg_id match {
-          case "" => temp
-          case _ => msg_id
-        },
+        PushDataResultToHive(
+          msg_id,
+          gexin_task_id,
           strData,
           pushData.getStPushType.getEPushDataType,
           pushData.getStPushType.getSBusinessId,
@@ -98,7 +105,7 @@ object GexinTaskMessageRelation {
           pushData.getIBuilderId,
           pushData.getBDefaultCfg)
       } catch {
-        case e:Throwable =>e.printStackTrace(); new PushDataResultToHive(msg_id,
+        case e:Throwable =>e.printStackTrace(); new PushDataResultToHive(temp,temp,
           temp,
           0,
           temp,
@@ -122,56 +129,6 @@ object GexinTaskMessageRelation {
     })
     dataFinal.repartition(1).createOrReplaceTempView("tempTable")
     spark.sql(s"insert overwrite table ${TABLERESULT} select * from tempTable")
-  }
-
-  def insertAnswerNew(ansData: Dataset[AnswersBean], spark: SparkSession) = {
-    import spark.implicits._
-    val dataRow = ansData.map(one => {
-      val id = one.ID
-      val user_id = one.ACCOUNT_ID
-      val userans = one.USER_ANS
-      val update_time = one.UPDATE_TIME
-      try {
-        val father = JSON.parseObject(userans, classOf[AnsFather])
-        val items = father.getvAnsItem()
-        val buffer = new ListBuffer[String]()
-        for (i <- (0 until items.size())) {
-          val ansItem = items.get(i)
-          val queNo = ansItem.getiQuestionNo()
-          val ansNo = ansItem.getsAnswer()
-          val options = ansItem.getvQuestionOption()
-          if (options.isEmpty) { //如果答题相为空则为str类型答案 例如:good
-            buffer.+=(ansNo)
-          } else {
-            //得到answer数组:1234
-            val ints = getRealNum(ansNo)
-            var sub: String = "";
-            for (i <- (0 until (ints.length))) {
-              if (i == ints.length - 1) {
-                sub += options.get(ints(i) - 1).getsTitle()
-              } else {
-                sub += options.get(ints(i) - 1).getsTitle() + "|"
-              }
-            }
-            buffer.+=(sub)
-          }
-        }
-        AnswerTable(id, user_id, buffer, update_time)
-      } catch {
-        case t: Throwable => t.printStackTrace(); AnswerTable(id, user_id, null, update_time)
-      }
-    })
-    dataRow.repartition(1).createOrReplaceTempView("tempTable")
-    spark.sql(s"insert overwrite  table ${TABLERESULT}  select * from tempTable")
-  }
-
-
-  def getRealNum(num: String) = {
-    val ints = new Array[Int](num.length)
-    for (i <- (0 until num.length)) {
-      ints(i) = String.valueOf(num.charAt(i)).toInt
-    }
-    ints
   }
 
 

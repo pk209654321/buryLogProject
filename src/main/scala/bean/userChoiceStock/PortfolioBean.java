@@ -37,6 +37,15 @@ public class PortfolioBean implements Serializable {
     private String stCommentInfo_sComment;
     private List<Integer> vBroadcastTime;
     private List<Integer> vStrategyId;
+    private long lUptTimeExt=0;
+
+    public long getlUptTimeExt() {
+        return lUptTimeExt;
+    }
+
+    public void setlUptTimeExt(long lUptTimeExt) {
+        this.lUptTimeExt = lUptTimeExt;
+    }
 
     public List<Integer> getvBroadcastTime() {
         return vBroadcastTime;
