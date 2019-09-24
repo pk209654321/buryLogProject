@@ -1,17 +1,16 @@
-package sparkRealTime
+package testBury.StreamingTest
 
-import com.sun.xml.internal.bind.v2.TODO
 import com.typesafe.config.ConfigFactory
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
+import org.apache.commons.lang3.StringUtils
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaCluster, KafkaUtils}
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.LocalOrLine
 import scalikejdbc._
 import scalikejdbc.config.DBs
-import sparkRealTime.buryLogRealTimeForCrm.RealTimeCrmLineTimeIp
 
 /**
   * ClassName BuryLogRealTimeMysql
@@ -19,10 +18,14 @@ import sparkRealTime.buryLogRealTimeForCrm.RealTimeCrmLineTimeIp
   * Author lenovo
   * Date 2019/3/5 14:10
   **/
-object BuryLogRealTimeForOnLine {
+object BuryHourStreamingTest {
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
     val load = ConfigFactory.load()
+    val str = load.getString("dev.flag")
+    if (str != "dev") {
+      return
+    }
     //获取偏移量表名称
     val tableName = load.getString("kafka.offset.table")
     // 创建kafka相关参数
@@ -34,17 +37,18 @@ object BuryLogRealTimeForOnLine {
     val topics = load.getString("kafka.topics").split(",").toSet
 
     // StreamingContext
-    val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLine")
-    if(local){
+    val sparkConf = new SparkConf().setAppName("BuryHourStreamingTest").setMaster("local[*]")
+    if (local) {
       sparkConf.setMaster("local[*]")
     }
     val sc = new SparkContext(sparkConf)
     val ssc = new StreamingContext(sc, Seconds(60))
+    ssc.checkpoint("hdfs://master:8020/user/wangyd/bury")
 
     // TODO:  
     DBs.setupAll()
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
-      SQL("select * from " + tableName + " where groupid=? and topic=?").bind(load.getString("kafka.group.id"),load.getString("kafka.topics")).map(rs => {
+      SQL("select * from " + tableName + " where groupid=? and topic=?").bind(load.getString("kafka.group.id"), load.getString("kafka.topics")).map(rs => {
         (TopicAndPartition(rs.string("topic"), rs.int("partitions")), rs.long("offset"))
       }).list().apply()
     }.toMap
@@ -74,29 +78,38 @@ object BuryLogRealTimeForOnLine {
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](ssc, kafkaParams, checkedOffset, messageHandler)
     }
 
+    val filterStream = stream.transform(line => {
+      val v = line.map(_._2)
+      BuryHourStreamingObject.doBuryPhoneHourMinute(v)
+    })
+
+    val tp_hStream = filterStream.map(line => {
+      val timeStr = line._1
+      val hash_id = line._2
+      val page_id = line._3
+      ((timeStr, page_id), hash_id)
+    })
+    val countDstream = tp_hStream.updateStateByKey(
+      (values: Seq[String], state: Option[Int]) => {
+        var newValue = state.getOrElse(0)
+        val i = values.distinct.count(one => {
+          StringUtils.isNotBlank(one)
+        })
+        Some(newValue + i)
+      }).print()
     stream.foreachRDD(oneRdd => {
       //实时处理
-      RealTimeCrmLineTimeIp.doRealTimeCrmLineTimeIp(oneRdd,sc)
       val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
-
       //偏移量新处理方式
       val offsetInfos = offsetRanges.map(line => {
         Seq(line.topic, load.getString("kafka.group.id"), line.partition, line.untilOffset)
       })
 
-      NamedDB('offset).localTx{
+      NamedDB('offset).localTx {
         implicit session =>
           SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
-            .batch(offsetInfos:_*).apply()
+            .batch(offsetInfos: _*).apply()
       }
-      // 记录偏移量
-      /* offsetRanges.foreach(osr => {
-         NamedDB('offset).localTx { implicit session =>
-           SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
-             .bind(osr.topic, load.getString("kafka.group.id"), osr.partition, osr.untilOffset).update().apply()
-         }
-         // println(s"${osr.topic} ${osr.partition} ${osr.fromOffset} ${osr.untilOffset}")
-       })*/
     })
     // 启动程序，等待程序终止
     ssc.start()

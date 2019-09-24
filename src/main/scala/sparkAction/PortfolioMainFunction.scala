@@ -65,22 +65,22 @@ object PortfolioMainFunction {
     val many = spark.sparkContext.parallelize(portfolioBeans, 100)
     PortfolioProSecInfoHiveInsertObject.insertPortfolioManyToHive(many, spark, diffDay)
     //用户自选股组信息
-   /* val groupInfo = getGroupInfoFromMysql(dataMysql)
+    val groupInfo = getGroupInfoFromMysql(dataMysql)
     val portGroupInfoes = groupInfo.flatMap(_.toSeq)
     val groups = spark.sparkContext.parallelize(portGroupInfoes, 100)
-    PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)*/
+    PortfolioProSecInfoHiveInsertObject.insertPortfolioToHiveGroupInfo(groups, spark, diffDay)
     //获取分享控件
-   /* val shareManies = getShare.flatMap(_.toSeq)
+    val shareManies = getShare.flatMap(_.toSeq)
     val shareRdds = spark.sparkContext.parallelize(shareManies, 1)
-    PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)*/
+    PortfolioProSecInfoHiveInsertObject.insertShareControl(shareRdds, spark)
     //获取预警数据
-   /* val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
+    val userStockAlertCfgDataAlls = PortfolioMysqlDataObject.getWarnSeq()
     val userStockAlertCfgDataAllsRdd = spark.sparkContext.parallelize(userStockAlertCfgDataAlls, 20)
-    PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)*/
+    PortfolioProSecInfoHiveInsertObject.insertEarlyWarn(userStockAlertCfgDataAllsRdd, spark)
     //获取用户开关数据
-   /* val userPushData = UserPushButtonInsertToHive.getUserPushData()
+    val userPushData = UserPushButtonInsertToHive.getUserPushData()
     val userPushRdd = spark.sparkContext.parallelize(userPushData, 20)
-    UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd, spark)*/
+    UserPushButtonInsertToHive.doUserPushButtonInsertToHive(userPushRdd, spark)
 
     spark.close()
   }
@@ -317,6 +317,7 @@ object PortfolioMainFunction {
               portGroupInfo2.setiVersion(iVersion)
               portGroupInfo2.setsKey(key)
               portGroupInfo2.setUpdateTime(updatetime)
+              portGroupInfo2.setGi_lUptTimeExt(gi.getLUptTimeExt)
 
 
               portGroupInfo2.setGs_isDel(gs_del)

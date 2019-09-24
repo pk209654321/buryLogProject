@@ -177,8 +177,8 @@ object StructUtil {
     StructField("iVersion", IntegerType),
     StructField("sKey", StringType),
     StructField("updateTime", StringType),
-    StructField("gs_lUptTimeExt", StringType),
-    StructField("gi_lUptTimeExt", StringType)
+    StructField("gs_lUptTimeExt", LongType),
+    StructField("gi_lUptTimeExt", LongType)
   ))
 
   val structShareMany=StructType(List(

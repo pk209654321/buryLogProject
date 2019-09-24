@@ -13,6 +13,8 @@ object DateScalaUtil {
   private val fastDateFormat2: FastDateFormat = FastDateFormat.getInstance("yy-MM-dd")
   private val fastDateFormat3: FastDateFormat = FastDateFormat.getInstance("yyyyMMddHHmmss")
   private val fastDateFormat4: FastDateFormat = FastDateFormat.getInstance("yyyyMMdd")
+  private val fastDateFormat5: FastDateFormat = FastDateFormat.getInstance("HH")
+  private val fastDateFormat6: FastDateFormat = FastDateFormat.getInstance("HH:mm")
   //时间戳格式化toString
   def tranTimeToString(dateLong:String,flag:Int) :String={
     flag match {
@@ -28,6 +30,23 @@ object DateScalaUtil {
       case 3=> {
         fastDateFormat3.format(new Date((dateLong+"000").toLong))
       }
+      case 5=> {
+        fastDateFormat5.format(new Date((dateLong+"000").toLong))
+      }
+      case 6=> {
+        fastDateFormat6.format(new Date((dateLong+"000").toLong))
+      }
+    }
+  }
+
+  //判断时间格式 转换成HH:mm
+  def judgeTime(time:String) ={
+    val i = time.indexOf(":")
+    if(i> -1){
+      val i = time.indexOf(":")
+      time.substring(i-2,i+3)
+    }else{
+      tranTimeToString(time,6)
     }
   }
 
@@ -67,6 +86,9 @@ object DateScalaUtil {
       case 3=> {
         fastDateFormat3.parse(dateStr)
       }
+      case 5=> {
+        fastDateFormat5.parse(dateStr)
+      }
     }
   }
 
@@ -77,6 +99,17 @@ object DateScalaUtil {
     instance.add(Calendar.DAY_OF_MONTH,num)
     instance.getTime
   }
+
+  def getAddEight(flag:Int,dateStr:String,num:Int)={
+    val date = string2Date(dateStr,flag)
+    val instance: Calendar = Calendar.getInstance()
+    instance.setTime(date)
+    instance.add(Calendar.HOUR_OF_DAY,num)
+    instance.getTime
+    date2String(instance.getTime,flag)
+  }
+
+
 
   def getPreviousDateStr(offset:Int,timeType:Int): String ={
     val nextDate: Date = DateScalaUtil.getNextDate(new Date(),offset)
@@ -92,10 +125,6 @@ object DateScalaUtil {
 
 
   def main(args: Array[String]): Unit = {
-//    val nextDate: Date = getNextDate(new Date(),-1)
-//    val string: String = date2String(nextDate,2)
-//    println(string)
-    val string: String = tranTimeToString("1540435521802",0)
-    println(string)
+    println(getAddEight(0, "2019-09-24 15:00:00", 8))
   }
 }

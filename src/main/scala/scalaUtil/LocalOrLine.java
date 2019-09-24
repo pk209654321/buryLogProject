@@ -33,6 +33,11 @@ public class LocalOrLine {
         return false;
     }
 
+    //判断当前是否为windows系统
+    public static boolean isWindows() {
+        return System.getProperties().getProperty("os.name").toUpperCase().indexOf("WINDOWS") != -1;
+    }
+
     public static void main(String[] args) {
         judgeLocal();
     }

@@ -12,8 +12,8 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 
 public class ConsumerDemo {
-	private static final String topic = "maxwell";
-	private static final Integer threads = 2;
+	private static final String topic = "buryTest";
+	private static final Integer threads = 1;
 
 	public static void main(String[] args) {
 		
@@ -22,7 +22,7 @@ public class ConsumerDemo {
 		props.put("group.id", "w1");
 		//smallest重最开始消费,largest代表重消费者启动后产生的数据才消费
 		//--from-beginning
-		props.put("auto.offset.reset", "smallest");
+		props.put("auto.offset.reset", "largest");
 
 		ConsumerConfig config = new ConsumerConfig(props);
 		ConsumerConnector consumer =Consumer.createJavaConsumerConnector(config);

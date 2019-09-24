@@ -58,6 +58,14 @@ public class RandomCharData {
     }
 
     public static byte[] hexStringToByteArray(String hexString) {
+        /**
+        　　* @Description: TODO 用于将mysql中的blob类型导入hive(string) 转换成 byte[]
+        　　* @param [hexString]
+        　　* @return byte[]
+        　　* @throws
+        　　* @author lenovo
+        　　* @date 2019/8/28 9:06
+        　　*/
         hexString = hexString.replaceAll(" ", "");
         int len = hexString.length();
         byte[] bytes = new byte[len / 2];

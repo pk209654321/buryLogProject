@@ -1,13 +1,12 @@
-package sparkRealTime
+package testBury
 
-import com.sun.xml.internal.bind.v2.TODO
 import com.typesafe.config.ConfigFactory
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaCluster, KafkaUtils}
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.LocalOrLine
 import scalikejdbc._
 import scalikejdbc.config.DBs
@@ -19,7 +18,7 @@ import sparkRealTime.buryLogRealTimeForCrm.RealTimeCrmLineTimeIp
   * Author lenovo
   * Date 2019/3/5 14:10
   **/
-object BuryLogRealTimeForOnLine {
+object BuryLogRealTimeForOnLineTest {
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
     val load = ConfigFactory.load()
@@ -28,36 +27,38 @@ object BuryLogRealTimeForOnLine {
     // 创建kafka相关参数
     val kafkaParams = Map(
       "metadata.broker.list" -> load.getString("kafka.broker.list"),
-      "group.id" -> load.getString("kafka.group.id"),
+      "group.id" -> "group_test1",
       "auto.offset.reset" -> kafka.api.OffsetRequest.LargestTimeString
     )
-    val topics = load.getString("kafka.topics").split(",").toSet
+    val topics = load.getString("kafka.test.topics").split(",").toSet
 
     // StreamingContext
-    val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLine")
-    if(local){
+    val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLineTest")
+    if (local) {
       sparkConf.setMaster("local[*]")
     }
     val sc = new SparkContext(sparkConf)
-    val ssc = new StreamingContext(sc, Seconds(60))
+    val ssc = new StreamingContext(sc, Seconds(10))
 
     // TODO:  
     DBs.setupAll()
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
-      SQL("select * from " + tableName + " where groupid=? and topic=?").bind(load.getString("kafka.group.id"),load.getString("kafka.topics")).map(rs => {
+      SQL("select * from " + tableName + " where groupid=? and topic=?").bind("group_test1", load.getString("kafka.test.topics")).map(rs => {
         (TopicAndPartition(rs.string("topic"), rs.int("partitions")), rs.long("offset"))
       }).list().apply()
     }.toMap
 
-    val stream = if (fromOffsets.size == 0) { // 假设程序第一次启动
+    val stream = if (fromOffsets.size == 0) {
+      // 假设程序第一次启动
+      println("-----------------------第一次")
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
     } else { //程序不是第一次启动
       var checkedOffset = Map[TopicAndPartition, Long]()
       val kafkaCluster = new KafkaCluster(kafkaParams)
       val earliestLeaderOffsets = kafkaCluster.getEarliestLeaderOffsets(fromOffsets.keySet)
       if (earliestLeaderOffsets.isRight) {
+        println("----------------------------is right")
         val topicAndPartitionToOffset = earliestLeaderOffsets.right.get
-
         // 开始对比
         checkedOffset = fromOffsets.map(owner => {
           //根据kafka中topic和partition获取最早的offset
@@ -76,27 +77,23 @@ object BuryLogRealTimeForOnLine {
 
     stream.foreachRDD(oneRdd => {
       //实时处理
-      RealTimeCrmLineTimeIp.doRealTimeCrmLineTimeIp(oneRdd,sc)
       val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
 
       //偏移量新处理方式
       val offsetInfos = offsetRanges.map(line => {
-        Seq(line.topic, load.getString("kafka.group.id"), line.partition, line.untilOffset)
+        Seq(line.topic, "group_test1", line.partition, line.untilOffset)
       })
-
-      NamedDB('offset).localTx{
+      oneRdd.foreach(line => {
+        println("-----------------------------------------:::::" + line._2)
+        if (line._2.indexOf("2") > -1) {
+          throw new Exception
+        }
+      })
+      NamedDB('offset).localTx {
         implicit session =>
           SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
-            .batch(offsetInfos:_*).apply()
+            .batch(offsetInfos: _*).apply()
       }
-      // 记录偏移量
-      /* offsetRanges.foreach(osr => {
-         NamedDB('offset).localTx { implicit session =>
-           SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
-             .bind(osr.topic, load.getString("kafka.group.id"), osr.partition, osr.untilOffset).update().apply()
-         }
-         // println(s"${osr.topic} ${osr.partition} ${osr.fromOffset} ${osr.untilOffset}")
-       })*/
     })
     // 启动程序，等待程序终止
     ssc.start()
