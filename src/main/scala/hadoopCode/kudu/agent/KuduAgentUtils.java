@@ -1,8 +1,7 @@
-package hadoopCode.kudu;
+package hadoopCode.kudu.agent;
 
 import org.apache.kudu.Type;
 import org.apache.kudu.client.*;
-import org.apache.spark.sql.execution.columnar.LONG;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

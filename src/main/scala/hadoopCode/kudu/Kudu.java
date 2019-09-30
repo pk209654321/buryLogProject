@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-public  enum Kudu {
+public enum Kudu {
     INSTANCE;
 
     private Kudu() {
@@ -77,6 +77,23 @@ public  enum Kudu {
         session.setMutationBufferSpace(5000);
         return session;
     }
+
+    public KuduSession newSessionManUal() throws KuduException {
+        /**
+        　　* @Description: TODO FlushMode:MANUAL_FLUSH
+        　　* @param []
+        　　* @return org.apache.kudu.client.KuduSession
+        　　* @throws
+        　　* @author lenovo
+        　　* @date 2019/9/25 9:13
+        　　*/
+        KuduSession session = client.newSession();
+        session.setFlushMode(SessionConfiguration.FlushMode.MANUAL_FLUSH);
+        session.setMutationBufferSpace(100000);
+        return session;
+    }
+
+
 
     public void closeSession(KuduSession session) {
         if (session != null && !session.isClosed()) {

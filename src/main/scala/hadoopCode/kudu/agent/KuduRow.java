@@ -1,4 +1,4 @@
-package hadoopCode.kudu;
+package hadoopCode.kudu.agent;
 
 import java.util.List;
 

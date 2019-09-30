@@ -68,13 +68,13 @@
             <artifactId>spark-streaming-kafka-0-8_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming-flume_2.11</artifactId>
             <version>${spark.version}</version>
-        </dependency>
+        </dependency>-->
         <!--hbase ===============================jar包-->
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
             <version>1.2.0</version>
@@ -83,14 +83,14 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
             <version>1.2.0</version>
-        </dependency>
+        </dependency>-->
 
         <!--hbase-spark ===============================jar包-->
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-spark</artifactId>
             <version>1.2.0-cdh5.15.0</version>
-        </dependency>
+        </dependency>-->
         <!-- jdbc=============================-->
         <dependency>
             <groupId>org.scalikejdbc</groupId>
@@ -135,11 +135,11 @@
             <version>1.5</version>
         </dependency>
 
-       <dependency>
+       <!--<dependency>
             <groupId>com.cloudera.impala.jdbc</groupId>
             <artifactId>ImpalaJDBC41</artifactId>
             <version>2.6.12</version>
-        </dependency>
+        </dependency>-->
         <!--kudu-->
        <dependency>
             <groupId>org.apache.kudu</groupId>
@@ -150,18 +150,6 @@
             <groupId>org.apache.kudu</groupId>
             <artifactId>kudu-spark2_2.11</artifactId>
             <version>1.7.0</version>
-        </dependency>-->
-        <!-- 微信发送 -->
-        <!--<dependency>
-            <groupId>io.github.biezhi</groupId>
-            <artifactId>wechat-api</artifactId>
-            <version>1.0.6</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>-->
     </dependencies>
     <profiles>

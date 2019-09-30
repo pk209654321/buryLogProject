@@ -7,7 +7,7 @@ import kafka.serializer.StringDecoder
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaCluster, KafkaUtils}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{SparkConf, SparkContext}
-import scalaUtil.LocalOrLine
+import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc._
 import scalikejdbc.config.DBs
 import testBury.StreamingTest.BuryHourStreamingTestNew.devFlag
@@ -24,8 +24,6 @@ object MysqlBuinessDataRealTime {
 
     val local: Boolean = LocalOrLine.judgeLocal()
     val load = ConfigFactory.load()
-    //开发模式标志
-    val devFlag = load.getString("dev.flag")
     //获取偏移量表名称
     val tableName = load.getString("kafka.mysqlBD.offset")
     //kafka地址
@@ -46,7 +44,7 @@ object MysqlBuinessDataRealTime {
     if (LocalOrLine.isWindows) {
       sparkConf.setMaster("local[*]")
       println("----------------------------开发模式")
-      return
+      //return
     }
     val ssc = new StreamingContext(sparkConf, Seconds(60))
     // TODO:
@@ -60,41 +58,37 @@ object MysqlBuinessDataRealTime {
     val stream = if (fromOffsets.size == 0) { // 假设程序第一次启动
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
     } else { //程序不是第一次启动
-      var checkedOffset = Map[TopicAndPartition, Long]()
-      val kafkaCluster = new KafkaCluster(kafkaParams)
-      val earliestLeaderOffsets = kafkaCluster.getEarliestLeaderOffsets(fromOffsets.keySet)
-      if (earliestLeaderOffsets.isRight) {
-        val topicAndPartitionToOffset = earliestLeaderOffsets.right.get
-
-        // 开始对比
-        checkedOffset = fromOffsets.map(owner => {
-          //根据kafka中topic和partition获取最早的offset
-          val clusterEarliestOffset = topicAndPartitionToOffset.get(owner._1).get.offset
-          if (owner._2 >= clusterEarliestOffset) {
-            //mysql中的偏移量值大于kafka中的偏移量大小
-            owner
-          } else {
-            (owner._1, clusterEarliestOffset)
-          }
-        })
-      }
       val messageHandler = (mm: MessageAndMetadata[String, String]) => (mm.key(), mm.message())
-      KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](ssc, kafkaParams, checkedOffset, messageHandler)
+      KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](ssc, kafkaParams, fromOffsets, messageHandler)
     }
 
     stream.foreachRDD(oneRdd => {
-      ProcessingMBData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order","impala::kudu_real.t_user_pay_record")
+      //todo 测试
       //ProcessingMBData.doProcessingMBData(oneRdd, "phpmanager", "user_test", "default", "user_test", "id","impala::default.user_test")
-      //实时处理
-      val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
-      //偏移量新处理方式
-      val offsetInfos = offsetRanges.map(line => {
-        Seq(line.topic, kmg, line.partition, line.untilOffset)
-      })
-      NamedDB('offset).localTx {
-        implicit session =>
-          SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
-            .batch(offsetInfos: _*).apply()
+      try {
+        //
+        //
+        //
+        //todo 正式
+        //
+
+        //实时处理
+        val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
+        //偏移量新处理方式
+        val offsetInfos = offsetRanges.map(line => {
+          Seq(line.topic, kmg, line.partition, line.untilOffset)
+        })
+        NamedDB('offset).localTx {
+          ProcessingMBOrderData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order", "impala::kudu_real.t_user_pay_record")
+          ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_merge_info", "kudu_real", "t_account_merge_info", "impala::kudu_real.t_account_merge_info")
+          ProcessingMBAcountDetailData.doProcessingMBData(oneRdd, "db_account", "t_account_detail", "kudu_real", "t_account_detail", "iAccountId", "impala::kudu_real.t_account_detail")
+          ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_resigter_info", "kudu_real", "t_account_resigter_info", "impala::kudu_real.t_account_resigter_info")
+          implicit session =>
+            SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")
+              .batch(offsetInfos: _*).apply()
+        }
+      } catch {
+        case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "同步失败"); ssc.stop()
       }
     })
     // 启动程序，等待程序终止

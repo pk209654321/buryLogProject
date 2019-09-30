@@ -5,10 +5,15 @@ import org.apache.kudu.ColumnSchema;
 import org.apache.kudu.Schema;
 import org.apache.kudu.Type;
 import org.apache.kudu.client.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
 
 
 public class KuduUtils {
     private static final ThreadLocal<KuduSession> threadLocal = new ThreadLocal<>();
+    private static Logger logger = LoggerFactory.getLogger(hadoopCode.kudu.KuduUtils.class);
 
     public static KuduTable table(String name) throws KuduException {
         return Kudu.INSTANCE.table(name);
@@ -41,6 +46,24 @@ public class KuduUtils {
     }
 
 
+    public static Delete createDeleteNew(String table, JSONObject data) throws KuduException {
+        KuduTable ktable = Kudu.INSTANCE.table(table);
+        Delete delete = ktable.newDelete();
+        PartialRow row = delete.getRow();
+        Schema schema = ktable.getSchema();
+        for (String colName : data.keySet()) {
+            try {
+                ColumnSchema colSchema = schema.getColumn(colName);
+                if (colSchema.isKey()) {
+                    fillRow(row, colSchema, data);
+                }
+            } catch (Exception e) {
+                logger.info("=====字段:" + colName + "不存在于kudu表:" + table);
+            }
+        }
+        return delete;
+    }
+
     public static Delete createDelete(String table, JSONObject data, String pk) throws KuduException {
         KuduTable ktable = Kudu.INSTANCE.table(table);
         Delete delete = ktable.newDelete();
@@ -65,8 +88,12 @@ public class KuduUtils {
         PartialRow row = upsert.getRow();
         Schema schema = ktable.getSchema();
         for (String colName : data.keySet()) {
-            ColumnSchema colSchema = schema.getColumn(colName);
-            fillRow(row, colSchema, data);
+            try {//todo  try目的避免缺字段导致的报错
+                ColumnSchema colSchema = schema.getColumn(colName);
+                fillRow(row, colSchema, data);
+            } catch (Exception e) {
+                logger.info("=====字段:" + colName + "不存在于kudu表:" + table);
+            }
         }
         return upsert;
     }
@@ -105,20 +132,20 @@ public class KuduUtils {
         client.deleteTable(tableName);
     }
 
-    public static void alterTableAddColumn(String tableName, String column, Type type) throws KuduException{
+    public static void alterTableAddColumn(String tableName, String column, Type type) throws KuduException {
         KuduClient client = Kudu.INSTANCE.client();
         AlterTableOptions alterTableOptions = new AlterTableOptions();
         alterTableOptions.addColumn(new ColumnSchema.ColumnSchemaBuilder(column, type).nullable(true).build());
         client.alterTable(tableName, alterTableOptions);
     }
 
-    public static void alterTableDeleteColumn(String tableName, String column) throws KuduException{
+    public static void alterTableDeleteColumn(String tableName, String column) throws KuduException {
         KuduClient client = Kudu.INSTANCE.client();
         AlterTableOptions alterTableOptions = new AlterTableOptions().dropColumn(column);
         client.alterTable(tableName, alterTableOptions);
     }
 
-    public static void alterTableChangeColumn(String tableName, String oldName, String newName) throws KuduException{
+    public static void alterTableChangeColumn(String tableName, String oldName, String newName) throws KuduException {
         KuduClient client = Kudu.INSTANCE.client();
         AlterTableOptions alterTableOptions = new AlterTableOptions();
         alterTableOptions.renameColumn(oldName, newName);
@@ -169,7 +196,16 @@ public class KuduUtils {
     public static KuduSession getSession() throws KuduException {
         KuduSession session = threadLocal.get();
         if (session == null) {
-            session = Kudu.INSTANCE.newAsyncSession();
+            session = Kudu.INSTANCE.newSession();
+            threadLocal.set(session);
+        }
+        return session;
+    }
+
+    public static KuduSession getManualSession() throws KuduException {
+        KuduSession session = threadLocal.get();
+        if (session == null) {
+            session = Kudu.INSTANCE.newSessionManUal();
             threadLocal.set(session);
         }
         return session;
@@ -184,15 +220,53 @@ public class KuduUtils {
         return session;
     }
 
+    public static void renameImpalaKuduField(HashMap<String, String> map, String tableName) {
+        /**
+         　　* @Description: TODO 批量修改kudu字段名称
+         　　* @param [map, tableName]
+         　　* @return void
+         　　* @throws
+         　　* @author lenovo
+         　　* @date 2019/9/26 15:07
+         　　*/
+        map.forEach((k, v) -> {
+            try {
+                alterTableChangeColumn(tableName, k, v);
+            } catch (KuduException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     public static void closeSession() {
         KuduSession session = threadLocal.get();
         threadLocal.set(null);
         Kudu.INSTANCE.closeSession(session);
     }
 
-    public static void main(String[] args) throws KuduException{
-        alterTableDeleteColumn("impala::kudu_real.t_user_pay_record", "clientorderuuid");
+    public static void main(String[] args) throws KuduException {
+        /*alterTableDeleteColumn("impala::kudu_real.t_user_pay_record", "clientorderuuid");
         Type string = Type.STRING;
-        alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);
+        alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);*/
+        HashMap<String, String> stringStringHashMap = new HashMap<>();
+        stringStringHashMap.put("iaccountid","iAccountId");
+        stringStringHashMap.put("susername","sUserName");
+        stringStringHashMap.put("sphone","sPhone");
+        stringStringHashMap.put("swbopenid","sWbOpenId");
+        stringStringHashMap.put("swxopenid","sWxOpenId");
+        stringStringHashMap.put("sqqopenid","sQQOpenId");
+        stringStringHashMap.put("sqqunionid","sQqUnionId");
+        stringStringHashMap.put("swxunionid","sWxUnionId");
+        stringStringHashMap.put("sprovince","sProvince");
+        stringStringHashMap.put("scity","sCity");
+        stringStringHashMap.put("ifrom","iFrom");
+        stringStringHashMap.put("iusertype","iUserType");
+        stringStringHashMap.put("sdua","sDUA");
+        stringStringHashMap.put("simei","sIMEI");
+        stringStringHashMap.put("sip","sIP");
+        stringStringHashMap.put("szfbopenid","sZFBOpenId");
+        stringStringHashMap.put("szfbuserid","sZFBUserId");
+        stringStringHashMap.put("sguid","sGUID");
+        renameImpalaKuduField(stringStringHashMap, "impala::kudu_real.t_account_resigter_info");
     }
 }

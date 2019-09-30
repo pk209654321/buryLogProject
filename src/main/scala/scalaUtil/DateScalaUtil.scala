@@ -125,6 +125,6 @@ object DateScalaUtil {
 
 
   def main(args: Array[String]): Unit = {
-    println(getAddEight(0, "2019-09-24 15:00:00", 8))
+    println(getAddEight(0, "0000-00-00 00:00:00", 8))
   }
 }

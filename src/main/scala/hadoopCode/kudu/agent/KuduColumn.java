@@ -1,4 +1,4 @@
-package hadoopCode.kudu;
+package hadoopCode.kudu.agent;
 
 import org.apache.kudu.Type;
 import org.apache.kudu.client.KuduPredicate;

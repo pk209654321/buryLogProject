@@ -1,5 +1,8 @@
-package hadoopCode.kudu;
+package hadoopCode.kudu.agent;
 
+import hadoopCode.kudu.agent.KuduAgent;
+import hadoopCode.kudu.agent.KuduColumn;
+import hadoopCode.kudu.agent.KuduRow;
 import org.apache.kudu.Type;
 import org.apache.kudu.client.KuduException;
 import org.apache.kudu.client.KuduPredicate;

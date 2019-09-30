@@ -1,28 +1,23 @@
 package sparkRealTime.mysqlBuinessData
 
-import java.util
-import java.util.ArrayList
-
 import com.alibaba.fastjson.{JSON, JSONObject}
-import hadoopCode.kudu.{KuduAgent, KuduColumn, KuduRow, KuduUtils}
+import hadoopCode.kudu.KuduUtils
+import hadoopCode.kudu.agent.KuduAgent
 import org.apache.commons.lang3.StringUtils
 import org.apache.kudu.Type
 import org.apache.kudu.client.{KuduSession, KuduTable}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.hive.client
 import scalaUtil.DateScalaUtil
-import scalikejdbc.{NamedDB, SQL}
-import scalikejdbc.config.DBs
 
 import scala.collection.mutable
 
 /**
   * ClassName ProcessingMBData
-  * Description TODO
+  * Description TODO db_investment.t_user_pay_record -------> impala::kudu_real.t_user_pay_record
   * Author lenovo
   * Date 2019/9/18 17:29
   **/
-object ProcessingMBData {
+object ProcessingMBOrderData {
   def doProcessingMBData(oneRdd: RDD[(String, String)], db_s: String, tb_s: String, db_t: String, tb_t: String, pk: String, kuduTb: String): Unit = {
     val filterData = oneRdd.map(_._2).filter(line => {
       val temp1 = "\"database\":\"" + db_s + "\",\"table\":\"" + tb_s + "\""
@@ -31,7 +26,7 @@ object ProcessingMBData {
     })
 
     filterData.foreachPartition(it => {
-      val session = KuduUtils.getSession
+      val session = KuduUtils.getManualSession
       it.foreach(line => {
         val typeStr = judgeDMLType(line)
         val jSONObject = JSON.parseObject(line)
@@ -43,29 +38,39 @@ object ProcessingMBData {
           val create_time = json.getString("create_time")
           val refund_time = json.getString("refund_time")
           val refund_apply_date = json.getString("refund_apply_date")
-          if(StringUtils.isNotBlank(pay_time)){
+          if (StringUtils.isNotBlank(pay_time) && !pay_time.equals("0000-00-00 00:00:00")) {
             json.put("pay_time", DateScalaUtil.getAddEight(0, pay_time, 8))
+          } else {
+            json.put("pay_time", null);
           }
-          if(StringUtils.isNotBlank(updatetime)){
+          if (StringUtils.isNotBlank(updatetime) && !updatetime.equals("0000-00-00 00:00:00")) {
             json.put("updatetime", DateScalaUtil.getAddEight(0, updatetime, 8))
+          } else {
+            json.put("updatetime", null)
           }
-          if(StringUtils.isNotBlank(create_time)){
+          if (StringUtils.isNotBlank(create_time) && !create_time.equals("0000-00-00 00:00:00")) {
             json.put("create_time", DateScalaUtil.getAddEight(0, create_time, 8))
+          } else {
+            json.put("create_time", null)
           }
-          if(StringUtils.isNotBlank(refund_time)){
+          if (StringUtils.isNotBlank(refund_time) && !refund_time.equals("0000-00-00 00:00:00")) {
             json.put("refund_time", DateScalaUtil.getAddEight(0, refund_time, 8))
+          } else {
+            json.put("refund_time", null)
           }
-          if(StringUtils.isNotBlank(refund_apply_date)){
+          if (StringUtils.isNotBlank(refund_apply_date) && !refund_apply_date.equals("0000-00-00 00:00:00")) {
             json.put("refund_apply_date", DateScalaUtil.getAddEight(0, refund_apply_date, 8))
+          } else {
+            json.put("refund_apply_date", null)
           }
-        }else{
+        } else {
           val sqlStr = jSONObject.getString("sql")
-          println("------------------------------------------修改语句"+sqlStr)
+          println("------------------------------------------修改语句" + sqlStr)
         }
         typeStr match {
-          case "insert" => doUpsert3(line, kuduTb, session, json, pk)
-          case "update" => doUpsert3(line, kuduTb, session, json, pk)
-          case "delete" => doDelete3(line, kuduTb, session, json, pk)
+          case "insert" => doUpsert3(kuduTb, session, json)
+          case "update" => doUpsert3(kuduTb, session, json)
+          case "delete" => doDelete3(kuduTb, session, json)
           case "table-alter" => doDDL3(line, tb_s, kuduTb)
           case _ =>
         }
@@ -75,24 +80,14 @@ object ProcessingMBData {
     })
   }
 
-  def doSql(sql: String): Unit = {
-    NamedDB('kuduIm).autoCommit { implicit session =>
-      SQL(sql).update().apply()
-    }
-  }
 
-  def kuduInsert() {
-    val agent = new KuduAgent
-  }
-
-
-  def doUpsert3(line: String, tableName: String, session: KuduSession, json: JSONObject, pk: String) {
+  def doUpsert3(tableName: String, session: KuduSession, json: JSONObject) {
     val upsert = KuduUtils.createUpsert(tableName, json)
     session.apply(upsert)
   }
 
-  def doDelete3(line: String, tableName: String, session: KuduSession, json: JSONObject, pk: String) {
-    val delete = KuduUtils.createDelete(tableName, json, pk)
+  def doDelete3(tableName: String, session: KuduSession, json: JSONObject) {
+    val delete = KuduUtils.createDeleteNew(tableName, json)
     session.apply(delete)
   }
 
@@ -120,7 +115,6 @@ object ProcessingMBData {
     cols = cols.replaceAll("\"", "")
     values = values.replaceAll("\"", "'")
     val sql = s"upsert into ${db_t}.${tb_t} (${cols}) values (${values})"
-    doSql(sql)
   }
 
   def getColType(oneDDL: String) = {
@@ -132,7 +126,7 @@ object ProcessingMBData {
   }
 
 
-  def doDDL3(line:String,tb_s:String,table_name:String) {
+  def doDDL3(line: String, tb_s: String, table_name: String) {
     println("ddl=====line========" + line)
     val sqlStr = "\"sql\":\"ALTER TABLE `" + tb_s + "`"
     val startI = line.indexOf(sqlStr)
@@ -149,53 +143,48 @@ object ProcessingMBData {
       if (addF > -1) {
         val colt = local(4)
         val im_colt = getDictColumn(colt)
-        KuduUtils.alterTableAddColumn(table_name,coln,im_colt)
+        KuduUtils.alterTableAddColumn(table_name, coln, im_colt)
       }
 
       if (dropF > -1) {
-        KuduUtils.alterTableDeleteColumn(table_name,coln)
+        KuduUtils.alterTableDeleteColumn(table_name, coln)
       }
 
       if (changeF > -1) {
         val newName = local(3)
-        KuduUtils.alterTableChangeColumn(table_name,coln,newName)
+        KuduUtils.alterTableChangeColumn(table_name, coln, newName)
       }
     }
   }
 
 
-  def doDDL(line: String, db_t: String, tb_t: String) = {
-    println("ddl=====" + line)
-    val sqlStr = "\"sql\":\"ALTER TABLE `" + tb_t + "`"
-    val startI = line.indexOf(sqlStr)
-    val sub = line.substring(startI)
-    val endI = sub.indexOf("}")
-    val start_end = sub.substring(sqlStr.length, endI - 1).replaceAll("\\\\r\\\\n", "").replaceAll("`", "")
-    val se = start_end.split(",", -1)
-    for (index <- (0 until (se.length))) {
-      val addF = se(index).indexOf("ADD")
-      val dropF = se(index).indexOf("DROP")
-      val changeF = se(index).indexOf("CHANGE")
-      val local = se(index).split(" ", -1)
-      val coln = local(2)
-      if (addF > -1) {
-        val colt = local(4)
-        val im_colt = getDictColumn(colt)
-        val sql = s"alter table ${db_t}.${tb_t} add columns (${coln} ${im_colt})"
-        println(sql)
-      }
+  def doDDL4(line: String, tb_s: String, table_name: String) {
+    println("ddl=====line========" + line)
+    val ddlStrs = line.split("\r\n", -1)
+    for (in <- (0 until (ddlStrs.length))) {
+      if (in != 0) {
+        val ddlOneStr = ddlStrs(in).replaceAll("(`|,)", "")
+        val acStrs = ddlOneStr.split(" ", -1)
+        val ac = acStrs(0)
+        val colName = acStrs(2)
+        val addF = ac.indexOf("ADD")
+        val dropF = ac.indexOf("DROP")
+        val changeF = ac.indexOf("CHANGE")
+        if (addF > -1) {
+          val colType = acStrs(4)
+          val reType = colType.replaceAll("\\(.*\\)","")
+          val im_colt = getDictColumn(reType)
+          KuduUtils.alterTableAddColumn(table_name, colName, im_colt)
+        }
 
-      if (dropF > -1) {
-        val sql = s"alter table ${db_t}.${tb_t} drop column ${coln}"
-        println(sql)
-      }
+        if (dropF > -1) {
+          KuduUtils.alterTableDeleteColumn(table_name, colName)
+        }
 
-      if (changeF > -1) {
-        val str3 = local(3)
-        val str5 = local(5)
-        val im_colt = getDictColumn(str5)
-        val sql = s"alter table ${db_t}.${tb_t} change column ${coln} ${str3} ${im_colt}}"
-        println(sql)
+        if (changeF > -1) {
+          val newName = acStrs(3)
+          KuduUtils.alterTableChangeColumn(table_name, colName, newName)
+        }
       }
     }
   }
@@ -225,27 +214,6 @@ object ProcessingMBData {
     } else {
       valStr.substring(keyStr.length, indexE).replaceAll("\"", "'")
     }
-  }
-
-  def doDelete(line: String, db_t: String, tb_t: String, pk: String) = {
-    println("delete=====" + line)
-    val pks = pk.split(",")
-    var sqlWhere = ""
-    for (index <- (0 until (pks.length))) {
-      val valStr = getValByKey(pks(index), line)
-      if (index == pks.length - 1) {
-        sqlWhere += pks(index) + "=" + valStr
-      } else {
-        sqlWhere += pks(index) + "=" + valStr + " and "
-      }
-    }
-    var sql = s"delete from ${db_t}.${tb_t} where ${sqlWhere}"
-    if (sqlWhere.equals("")) {
-      sql = ""
-    } else {
-      sql
-    }
-    doSql(sql)
   }
 
 
