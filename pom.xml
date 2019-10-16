@@ -68,6 +68,11 @@
             <artifactId>spark-streaming-kafka-0-8_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql-kafka-0-10_2.11</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
         <!--<dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming-flume_2.11</artifactId>
@@ -145,6 +150,11 @@
             <groupId>org.apache.kudu</groupId>
             <artifactId>kudu-client</artifactId>
             <version>1.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.12</version>
         </dependency>
         <!--<dependency>
             <groupId>org.apache.kudu</groupId>

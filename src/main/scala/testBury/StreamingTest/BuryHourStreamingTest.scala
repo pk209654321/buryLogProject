@@ -42,10 +42,8 @@ object BuryHourStreamingTest {
       sparkConf.setMaster("local[*]")
     }
     val sc = new SparkContext(sparkConf)
-    val ssc = new StreamingContext(sc, Seconds(60))
-    ssc.checkpoint("hdfs://master:8020/user/wangyd/bury")
-
-    // TODO:  
+    val ssc = new StreamingContext(sc, Seconds(5))
+    // TODO:
     DBs.setupAll()
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
       SQL("select * from " + tableName + " where groupid=? and topic=?").bind(load.getString("kafka.group.id"), load.getString("kafka.topics")).map(rs => {
@@ -77,38 +75,25 @@ object BuryHourStreamingTest {
       val messageHandler = (mm: MessageAndMetadata[String, String]) => (mm.key(), mm.message())
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](ssc, kafkaParams, checkedOffset, messageHandler)
     }
-
-    val filterStream = stream.transform(line => {
-      val v = line.map(_._2)
-      BuryHourStreamingObject.doBuryPhoneHourMinute(v)
-    })
-
-    val tp_hStream = filterStream.map(line => {
-      val timeStr = line._1
-      val hash_id = line._2
-      val page_id = line._3
-      ((timeStr, page_id), hash_id)
-    })
-    val countDstream = tp_hStream.updateStateByKey(
-      (values: Seq[String], state: Option[Int]) => {
-        var newValue = state.getOrElse(0)
-        val i = values.distinct.count(one => {
-          StringUtils.isNotBlank(one)
-        })
-        Some(newValue + i)
-      }).print()
     stream.foreachRDD(oneRdd => {
-      //实时处理
-      val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
-      //偏移量新处理方式
-      val offsetInfos = offsetRanges.map(line => {
-        Seq(line.topic, load.getString("kafka.group.id"), line.partition, line.untilOffset)
-      })
-
-      NamedDB('offset).localTx {
-        implicit session =>
-          SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
-            .batch(offsetInfos: _*).apply()
+      if (!oneRdd.isEmpty()) {
+        oneRdd.foreach(one => {
+          println("=============" + one._2)
+          if (one._2.indexOf("100") > -1) {
+            throw new Exception
+          }
+        })
+        //实时处理
+        val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
+        //偏移量新处理方式
+        val offsetInfos = offsetRanges.map(line => {
+          Seq(line.topic, load.getString("kafka.group.id"), line.partition, line.untilOffset)
+        })
+        NamedDB('offset).localTx {
+          implicit session =>
+            SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions, offset) VALUES (?,?,?,?)")
+              .batch(offsetInfos: _*).apply()
+        }
       }
     })
     // 启动程序，等待程序终止

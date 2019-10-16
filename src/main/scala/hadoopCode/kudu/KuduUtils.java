@@ -249,24 +249,9 @@ public class KuduUtils {
         Type string = Type.STRING;
         alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);*/
         HashMap<String, String> stringStringHashMap = new HashMap<>();
-        stringStringHashMap.put("iaccountid","iAccountId");
-        stringStringHashMap.put("susername","sUserName");
-        stringStringHashMap.put("sphone","sPhone");
-        stringStringHashMap.put("swbopenid","sWbOpenId");
-        stringStringHashMap.put("swxopenid","sWxOpenId");
-        stringStringHashMap.put("sqqopenid","sQQOpenId");
-        stringStringHashMap.put("sqqunionid","sQqUnionId");
-        stringStringHashMap.put("swxunionid","sWxUnionId");
-        stringStringHashMap.put("sprovince","sProvince");
-        stringStringHashMap.put("scity","sCity");
-        stringStringHashMap.put("ifrom","iFrom");
-        stringStringHashMap.put("iusertype","iUserType");
-        stringStringHashMap.put("sdua","sDUA");
-        stringStringHashMap.put("simei","sIMEI");
-        stringStringHashMap.put("sip","sIP");
-        stringStringHashMap.put("szfbopenid","sZFBOpenId");
-        stringStringHashMap.put("szfbuserid","sZFBUserId");
-        stringStringHashMap.put("sguid","sGUID");
-        renameImpalaKuduField(stringStringHashMap, "impala::kudu_real.t_account_resigter_info");
+        //stringStringHashMap.put("swxopenid", "sWxOpenId");
+        //stringStringHashMap.put("unionid", "unionId");
+        stringStringHashMap.put("sphone", "sPhone");
+        renameImpalaKuduField(stringStringHashMap, "impala::kudu_real.t_user_invitation");
     }
 }

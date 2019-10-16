@@ -172,7 +172,7 @@ object ProcessingMBOrderData {
         val changeF = ac.indexOf("CHANGE")
         if (addF > -1) {
           val colType = acStrs(4)
-          val reType = colType.replaceAll("\\(.*\\)","")
+          val reType = colType.replaceAll("\\(.*\\)", "")
           val im_colt = getDictColumn(reType)
           KuduUtils.alterTableAddColumn(table_name, colName, im_colt)
         }
@@ -186,6 +186,15 @@ object ProcessingMBOrderData {
           KuduUtils.alterTableChangeColumn(table_name, colName, newName)
         }
       }
+    }
+  }
+
+  def getRightTimeByName(json: JSONObject, filedName: String) {
+    val filedNameVal = json.getString(filedName)
+    if (StringUtils.isNotBlank(filedNameVal) && !"0000-00-00 00:00:00".equals(filedNameVal)) {
+      json.put(filedName, DateScalaUtil.getAddEight(0, filedNameVal, 8))
+    } else {
+      json.put(filedName, null)
     }
   }
 

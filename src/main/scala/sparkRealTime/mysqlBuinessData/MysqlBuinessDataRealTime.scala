@@ -10,7 +10,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc._
 import scalikejdbc.config.DBs
-import testBury.StreamingTest.BuryHourStreamingTestNew.devFlag
 
 /**
   * ClassName BuryLogRealTimeMysql
@@ -36,7 +35,8 @@ object MysqlBuinessDataRealTime {
     val kafkaParams = Map(
       "metadata.broker.list" -> kbl,
       "group.id" -> kmg,
-      "auto.offset.reset" -> kafka.api.OffsetRequest.LargestTimeString
+      "auto.offset.reset" -> kafka.api.OffsetRequest.LargestTimeString,
+      "enable.auto.commit" -> "false"
     )
     val topics = kmt.split(",").toSet
 
@@ -66,26 +66,25 @@ object MysqlBuinessDataRealTime {
       //todo 测试
       //ProcessingMBData.doProcessingMBData(oneRdd, "phpmanager", "user_test", "default", "user_test", "id","impala::default.user_test")
       try {
-        //
-        //
-        //
-        //todo 正式
-        //
-
-        //实时处理
-        val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
-        //偏移量新处理方式
-        val offsetInfos = offsetRanges.map(line => {
-          Seq(line.topic, kmg, line.partition, line.untilOffset)
-        })
-        NamedDB('offset).localTx {
-          ProcessingMBOrderData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order", "impala::kudu_real.t_user_pay_record")
-          ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_merge_info", "kudu_real", "t_account_merge_info", "impala::kudu_real.t_account_merge_info")
-          ProcessingMBAcountDetailData.doProcessingMBData(oneRdd, "db_account", "t_account_detail", "kudu_real", "t_account_detail", "iAccountId", "impala::kudu_real.t_account_detail")
-          ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_resigter_info", "kudu_real", "t_account_resigter_info", "impala::kudu_real.t_account_resigter_info")
-          implicit session =>
-            SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")
-              .batch(offsetInfos: _*).apply()
+        if (!oneRdd.isEmpty()) {
+          //实时处理
+          val offsetRanges = oneRdd.asInstanceOf[HasOffsetRanges].offsetRanges
+          //偏移量新处理方式
+          val offsetInfos = offsetRanges.map(line => {
+            Seq(line.topic, kmg, line.partition, line.untilOffset)
+          })
+          NamedDB('offset).localTx {
+            ProcessingMBUserInvitation.doProcessingMBData(oneRdd, "db_sscf", "t_user_invitation", "kudu_real", "t_user_invitation", "impala::kudu_real.t_user_invitation")
+            //ProcessingMBProduct.doProcessingMBData(oneRdd, "db_sscf", "t_product", "kudu_real", "t_product", "impala::kudu_real.t_product")
+            //ProcessingMBPaymanagerSaleStatement.doProcessingMBData(oneRdd, "db_sscf", "paymanager_sale_statement", "kudu_real", "paymanager_sale_statement", "impala::kudu_real.paymanager_sale_statement")
+            //ProcessingMBOrderData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order", "impala::kudu_real.t_user_pay_record")
+            //ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_merge_info", "kudu_real", "t_account_merge_info", "impala::kudu_real.t_account_merge_info")
+            //ProcessingMBAcountDetailData.doProcessingMBData(oneRdd, "db_account", "t_account_detail", "kudu_real", "t_account_detail", "iAccountId", "impala::kudu_real.t_account_detail")
+            //ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_resigter_info", "kudu_real", "t_account_resigter_info", "impala::kudu_real.t_account_resigter_info")
+            implicit session =>
+              SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")
+                .batch(offsetInfos: _*).apply()
+          }
         }
       } catch {
         case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "同步失败"); ssc.stop()
