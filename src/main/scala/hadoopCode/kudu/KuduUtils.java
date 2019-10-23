@@ -9,11 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class KuduUtils {
     private static final ThreadLocal<KuduSession> threadLocal = new ThreadLocal<>();
     private static Logger logger = LoggerFactory.getLogger(hadoopCode.kudu.KuduUtils.class);
+    private static Map<String,Object> map=new ConcurrentHashMap<>();
 
     public static KuduTable table(String name) throws KuduException {
         return Kudu.INSTANCE.table(name);
@@ -249,9 +252,18 @@ public class KuduUtils {
         Type string = Type.STRING;
         alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);*/
         HashMap<String, String> stringStringHashMap = new HashMap<>();
-        //stringStringHashMap.put("swxopenid", "sWxOpenId");
-        //stringStringHashMap.put("unionid", "unionId");
-        stringStringHashMap.put("sphone", "sPhone");
-        renameImpalaKuduField(stringStringHashMap, "impala::kudu_real.t_user_invitation");
+        stringStringHashMap.put("data_id", "DATA_ID");
+        stringStringHashMap.put("data_key", "DATA_KEY");
+        stringStringHashMap.put("user_type", "USER_TYPE");
+        stringStringHashMap.put("user_id", "USER_ID");
+        stringStringHashMap.put("circle_id", "CIRCLE_ID");
+        stringStringHashMap.put("circle_tab_id", "CIRCLE_TAB_ID");
+        stringStringHashMap.put("from_id", "FROM_ID");
+        stringStringHashMap.put("from_guid", "FROM_GUID");
+        stringStringHashMap.put("from_sign_id", "FROM_SIGN_ID");
+        stringStringHashMap.put("data_comment", "DATA_COMMENT");
+        stringStringHashMap.put("update_time", "UPDATE_TIME");
+
+        renameImpalaKuduField(stringStringHashMap, "impala::kudu_real.nf_ac_customer_advisor_qrcode_info");
     }
 }

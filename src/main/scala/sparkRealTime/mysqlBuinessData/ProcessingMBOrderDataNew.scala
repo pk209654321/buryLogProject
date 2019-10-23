@@ -3,19 +3,18 @@ package sparkRealTime.mysqlBuinessData
 import com.alibaba.fastjson.{JSON, JSONObject}
 import hadoopCode.kudu.KuduUtils
 import org.apache.spark.rdd.RDD
-
+import scalaUtil.MailUtil
 /**
   * ClassName ProcessingMBData
-  * Description //TODO db_investment.t_user_pay_record -------> impala::kudu_real.t_user_pay_record
+  * Description TODO db_investment.t_user_pay_record -------> impala::kudu_real.t_user_pay_record
   * Author lenovo
   * Date 2019/9/18 17:29
   **/
-object ProcessingMBUserInvitation{
-  //todo
+object ProcessingMBOrderDataNew {
   def doProcessingMBData(oneRdd: RDD[(String, String)], db_s: String, tb_s: String, db_t: String, tb_t: String, kuduTb: String): Unit = {
     val filterData = oneRdd.map(one => {
       try {
-         JSON.parseObject(one._2)
+        JSON.parseObject(one._2)
       } catch {
         case e:Throwable => println("错误数据=========================="+one._2);new JSONObject()
       }
@@ -24,14 +23,18 @@ object ProcessingMBUserInvitation{
       val tb_name = one.getString("table")
       db_s.equals(db_name) && tb_s.equals(tb_name)
     })
+
     filterData.foreachPartition(it => {
       val session = KuduUtils.getManualSession
       it.foreach(line => {
         var jsonData = new JSONObject();
         if (!line.containsKey("table-alter")) {
           jsonData = line.getJSONObject("data")
-          ProcessingMBOrderData.getRightTimeByName(jsonData,"authorize_time")
-          ProcessingMBOrderData.getRightTimeByName(jsonData,"invite_time")
+          ProcessingMBOrderData.getRightTimeByName(jsonData,"pay_time")
+          ProcessingMBOrderData.getRightTimeByName(jsonData,"updatetime")
+          ProcessingMBOrderData.getRightTimeByName(jsonData,"create_time")
+          ProcessingMBOrderData.getRightTimeByName(jsonData,"refund_time")
+          ProcessingMBOrderData.getRightTimeByName(jsonData,"refund_apply_date")
         } else {
           val sqlStr = line.getString("sql")
           println("------------------------------------------修改语句" + sqlStr)
@@ -48,8 +51,5 @@ object ProcessingMBUserInvitation{
       session.flush()
       KuduUtils.closeSession()
     })
-  }
-
-  def main(args: Array[String]): Unit = {
   }
 }

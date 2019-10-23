@@ -20,7 +20,7 @@ object ProcessingMBAccountMergeInfo {
     }).filter(one => {
       val db_name = one.getString("database")
       val tb_name = one.getString("table")
-      db_name.equals(db_s) && tb_name.equals(tb_s)
+      db_s.equals(db_name) && tb_s.equals(tb_name)
     })
     filterData.foreachPartition(it => {
       val session = KuduUtils.getManualSession

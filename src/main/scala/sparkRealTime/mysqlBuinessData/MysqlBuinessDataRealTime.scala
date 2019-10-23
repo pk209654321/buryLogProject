@@ -21,7 +21,6 @@ object MysqlBuinessDataRealTime {
 
   def main(args: Array[String]): Unit = {
 
-    val local: Boolean = LocalOrLine.judgeLocal()
     val load = ConfigFactory.load()
     //获取偏移量表名称
     val tableName = load.getString("kafka.mysqlBD.offset")
@@ -41,6 +40,8 @@ object MysqlBuinessDataRealTime {
     val topics = kmt.split(",").toSet
 
     val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLine")
+    sparkConf.set("spark.streaming.kafka.maxRatePartition", "1000") //每个partitioin每秒处理的条数
+    sparkConf.set("spark.streaming.backpressure.enabled", "true") //反压
     if (LocalOrLine.isWindows) {
       sparkConf.setMaster("local[*]")
       println("----------------------------开发模式")
@@ -74,13 +75,18 @@ object MysqlBuinessDataRealTime {
             Seq(line.topic, kmg, line.partition, line.untilOffset)
           })
           NamedDB('offset).localTx {
-            ProcessingMBUserInvitation.doProcessingMBData(oneRdd, "db_sscf", "t_user_invitation", "kudu_real", "t_user_invitation", "impala::kudu_real.t_user_invitation")
-            //ProcessingMBProduct.doProcessingMBData(oneRdd, "db_sscf", "t_product", "kudu_real", "t_product", "impala::kudu_real.t_product")
-            //ProcessingMBPaymanagerSaleStatement.doProcessingMBData(oneRdd, "db_sscf", "paymanager_sale_statement", "kudu_real", "paymanager_sale_statement", "impala::kudu_real.paymanager_sale_statement")
-            //ProcessingMBOrderData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order", "impala::kudu_real.t_user_pay_record")
             //ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_merge_info", "kudu_real", "t_account_merge_info", "impala::kudu_real.t_account_merge_info")
-            //ProcessingMBAcountDetailData.doProcessingMBData(oneRdd, "db_account", "t_account_detail", "kudu_real", "t_account_detail", "iAccountId", "impala::kudu_real.t_account_detail")
-            //ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_resigter_info", "kudu_real", "t_account_resigter_info", "impala::kudu_real.t_account_resigter_info")
+            //ProcessingMBUserInvitation.doProcessingMBData(oneRdd, "db_sscf", "t_user_invitation", "kudu_real", "t_user_invitation", "impala::kudu_real.t_user_invitation")
+            ProcessingMBUserProduct.doProcessingMBData(oneRdd,"db_sscf","t_user_product","kudu_real","t_user_product","impala::kudu_real.t_user_product")
+            ProcessingMBNfAcCustomerAdvisorQrcodeInfo.doProcessingMBData(oneRdd, "db_account", "nf_ac_customer_advisor_qrcode_info", "kudu_real", "nf_ac_customer_advisor_qrcode_info", "impala::kudu_real.nf_ac_customer_advisor_qrcode_info")
+            ProcessingMBAppDataTrace.doProcessingMBData(oneRdd, "db_sscf", "app_data_trace", "kudu_real", "app_data_trace", "impala::kudu_real.app_data_trace")
+            ProcessingMBProduct.doProcessingMBData(oneRdd, "db_sscf", "t_product", "kudu_real", "t_product", "impala::kudu_real.t_product")
+            ProcessingMBPaymanagerSaleStatement.doProcessingMBData(oneRdd, "db_sscf", "paymanager_sale_statement", "kudu_real", "paymanager_sale_statement", "impala::kudu_real.paymanager_sale_statement")
+            ProcessingMBAcountDetailData.doProcessingMBData(oneRdd, "db_account", "t_account_detail", "kudu_real", "t_account_detail", "iAccountId", "impala::kudu_real.t_account_detail")
+            ProcessingMBAccountResigterInfo.doProcessingMBData(oneRdd, "db_account", "t_account_resigter_info", "kudu_real", "t_account_resigter_info", "impala::kudu_real.t_account_resigter_info")
+            //处理订单数据新方式
+            ProcessingMBOrderDataNew.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "impala::kudu_real.t_user_pay_record")
+            //ProcessingMBOrderData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order", "impala::kudu_real.t_user_pay_record")
             implicit session =>
               SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")
                 .batch(offsetInfos: _*).apply()

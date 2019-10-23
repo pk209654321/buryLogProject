@@ -19,7 +19,7 @@ object ProcessingMBPaymanagerSaleStatement{
       try {
          JSON.parseObject(one._2)
       } catch {
-        case _ => println("错误数据=========================="+one._2);new JSONObject()
+        case e:Throwable => println("错误数据=========================="+one._2);new JSONObject()
       }
     }).filter(one => {
       val db_name = one.getString("database")

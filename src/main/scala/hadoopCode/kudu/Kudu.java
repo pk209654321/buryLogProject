@@ -51,12 +51,6 @@ public enum Kudu {
         return table;
     }
 
-    /**
-     * FlushMode:AUTO_FLUSH_BACKGROUND
-     *
-     * @return
-     * @throws KuduException
-     */
     public KuduSession newAsyncSession() throws KuduException {
         KuduSession session = client.newSession();
         session.setFlushMode(SessionConfiguration.FlushMode.AUTO_FLUSH_BACKGROUND);
@@ -65,12 +59,6 @@ public enum Kudu {
         return session;
     }
 
-    /**
-     * FlushMode:AUTO_FLUSH_SYNC
-     *
-     * @return
-     * @throws KuduException
-     */
     public KuduSession newSession() throws KuduException {
         KuduSession session = client.newSession();
         session.setFlushMode(SessionConfiguration.FlushMode.AUTO_FLUSH_SYNC);

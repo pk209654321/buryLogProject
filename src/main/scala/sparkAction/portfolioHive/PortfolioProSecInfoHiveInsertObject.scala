@@ -119,7 +119,8 @@ object PortfolioProSecInfoHiveInsertObject {
         broadCastTime,
         strategyId,
         line.getUpdateTime,
-        line.getlUptTimeExt()
+        line.getlUptTimeExt(),
+        line.isbInitiative()
       )
     })
     val createDataFrame = spark.createDataFrame(portRow, StructUtil.structPortfolioProSecInfo).repartition(1).persist()

@@ -20,8 +20,6 @@ import scalikejdbc.config.DBs
 object TouTiaoBackObject {
 
   def main(args: Array[String]): Unit = {
-
-    val local: Boolean = LocalOrLine.judgeLocal()
     val load = ConfigFactory.load()
     //获取偏移量表名称
     val offsetTableName = load.getString("kafka.toutiao.offset")
@@ -35,12 +33,11 @@ object TouTiaoBackObject {
     val kafkaParams = Map(
       "metadata.broker.list" -> kbl,
       "group.id" -> kmg,
-      "auto.offset.reset" -> kafka.api.OffsetRequest.LargestTimeString,
-      "enable.auto.commit" -> "false"
+      "auto.offset.reset" -> kafka.api.OffsetRequest.LargestTimeString
     )
     val topics = kmt.split(",").toSet
 
-    val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLine")
+    val sparkConf = new SparkConf().setAppName(s"${this.getClass.getSimpleName}")
     if (LocalOrLine.isWindows) {
       sparkConf.setMaster("local[*]")
       println("----------------------------开发模式")

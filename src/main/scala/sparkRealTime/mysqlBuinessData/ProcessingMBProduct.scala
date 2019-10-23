@@ -19,7 +19,7 @@ object ProcessingMBProduct{
       try {
          JSON.parseObject(one._2)
       } catch {
-        case _ => println("错误数据=========================="+one._2);new JSONObject()
+        case e:Throwable => println("错误数据=========================="+one._2);new JSONObject()
       }
     }).filter(one => {
       val db_name = one.getString("database")
@@ -32,6 +32,7 @@ object ProcessingMBProduct{
         var jsonData = new JSONObject();
         if (!line.containsKey("table-alter")) {
           jsonData = line.getJSONObject("data")
+          ProcessingMBOrderData.replaceNewName(jsonData,"sort","sorts")
           ProcessingMBOrderData.getRightTimeByName(jsonData,"apply_time")
           ProcessingMBOrderData.getRightTimeByName(jsonData,"auditor_time")
           ProcessingMBOrderData.getRightTimeByName(jsonData,"ctime")

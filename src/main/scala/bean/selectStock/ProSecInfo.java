@@ -12,121 +12,127 @@ import com.qq.tars.protocol.tars.Message;
 import com.qq.tars.protocol.tars.annotation.TarsStruct;
 import com.qq.tars.protocol.tars.annotation.TarsStructProperty;
 import com.qq.tars.protocol.util.TarsUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @TarsStruct
 public class ProSecInfo extends Message {
     @TarsStructProperty(
-        order = 0,
-        isRequire = false
+            order = 0,
+            isRequire = false
     )
     public String sDtSecCode = "";
     @TarsStructProperty(
-        order = 1,
-        isRequire = false
+            order = 1,
+            isRequire = false
     )
     public float fHighPrice = -1.0F;
     @TarsStructProperty(
-        order = 2,
-        isRequire = false
+            order = 2,
+            isRequire = false
     )
     public float fLowPrice = -1.0F;
     @TarsStructProperty(
-        order = 3,
-        isRequire = false
+            order = 3,
+            isRequire = false
     )
     public float fIncreasePer = -1.0F;
     @TarsStructProperty(
-        order = 4,
-        isRequire = false
+            order = 4,
+            isRequire = false
     )
     public float fDecreasesPer = -1.0F;
     @TarsStructProperty(
-        order = 5,
-        isRequire = false
+            order = 5,
+            isRequire = false
     )
     public boolean bRecvAnnounce = false;
     @TarsStructProperty(
-        order = 6,
-        isRequire = false
+            order = 6,
+            isRequire = false
     )
     public boolean bRecvResearch = false;
     @TarsStructProperty(
-        order = 7,
-        isRequire = false
+            order = 7,
+            isRequire = false
     )
     public boolean isDel = false;
     @TarsStructProperty(
-        order = 8,
-        isRequire = false
+            order = 8,
+            isRequire = false
     )
     public int iCreateTime = -1;
     @TarsStructProperty(
-        order = 9,
-        isRequire = false
+            order = 9,
+            isRequire = false
     )
     public int iUpdateTime = -1;
     @TarsStructProperty(
-        order = 10,
-        isRequire = false
+            order = 10,
+            isRequire = false
     )
     public String sName = "";
     @TarsStructProperty(
-        order = 11,
-        isRequire = false
+            order = 11,
+            isRequire = false
     )
     public boolean isHold = false;
     @TarsStructProperty(
-        order = 12,
-        isRequire = false
+            order = 12,
+            isRequire = false
     )
     public CommentInfo stCommentInfo = null;
     @TarsStructProperty(
-        order = 13,
-        isRequire = false
+            order = 13,
+            isRequire = false
     )
     public boolean isAiAlert = true;
     @TarsStructProperty(
-        order = 14,
-        isRequire = false
+            order = 14,
+            isRequire = false
     )
     public boolean isDKAlert = false;
     @TarsStructProperty(
-        order = 15,
-        isRequire = false
+            order = 15,
+            isRequire = false
     )
     public List<Integer> vBroadcastTime = null;
     @TarsStructProperty(
-        order = 16,
-        isRequire = false
+            order = 16,
+            isRequire = false
     )
     public float fChipHighPrice = -1.0F;
     @TarsStructProperty(
-        order = 17,
-        isRequire = false
+            order = 17,
+            isRequire = false
     )
     public float fChipLowPrice = -1.0F;
     @TarsStructProperty(
-        order = 18,
-        isRequire = false
+            order = 18,
+            isRequire = false
     )
     public float fMainChipHighPrice = -1.0F;
     @TarsStructProperty(
-        order = 19,
-        isRequire = false
+            order = 19,
+            isRequire = false
     )
     public float fMainChipLowPrice = -1.0F;
     @TarsStructProperty(
-        order = 20,
-        isRequire = false
+            order = 20,
+            isRequire = false
     )
     public List<Integer> vStrategyId = null;
     @TarsStructProperty(
-        order = 22,
-        isRequire = false
+            order = 22,
+            isRequire = false
     )
     public long lUptTimeExt = 0L;
+    @TarsStructProperty(
+            order = 23,
+            isRequire = false
+    )
+    public boolean bInitiative = true;
     static CommentInfo cache_stCommentInfo = new CommentInfo();
     static List<Integer> cache_vBroadcastTime = new ArrayList();
     static List<Integer> cache_vStrategyId;
@@ -307,10 +313,18 @@ public class ProSecInfo extends Message {
         this.lUptTimeExt = lUptTimeExt;
     }
 
+    public boolean getBInitiative() {
+        return bInitiative;
+    }
+
+    public void setBInitiative(boolean bInitiative) {
+        this.bInitiative = bInitiative;
+    }
+
     public ProSecInfo() {
     }
 
-    public ProSecInfo(String sDtSecCode, float fHighPrice, float fLowPrice, float fIncreasePer, float fDecreasesPer, boolean bRecvAnnounce, boolean bRecvResearch, boolean isDel, int iCreateTime, int iUpdateTime, String sName, boolean isHold, CommentInfo stCommentInfo, boolean isAiAlert, boolean isDKAlert, List<Integer> vBroadcastTime, float fChipHighPrice, float fChipLowPrice, float fMainChipHighPrice, float fMainChipLowPrice, List<Integer> vStrategyId, long lUptTimeExt) {
+    public ProSecInfo(String sDtSecCode, float fHighPrice, float fLowPrice, float fIncreasePer, float fDecreasesPer, boolean bRecvAnnounce, boolean bRecvResearch, boolean isDel, int iCreateTime, int iUpdateTime, String sName, boolean isHold, CommentInfo stCommentInfo, boolean isAiAlert, boolean isDKAlert, List<Integer> vBroadcastTime, float fChipHighPrice, float fChipLowPrice, float fMainChipHighPrice, float fMainChipLowPrice, List<Integer> vStrategyId, long lUptTimeExt, boolean bInitiative) {
         this.sDtSecCode = sDtSecCode;
         this.fHighPrice = fHighPrice;
         this.fLowPrice = fLowPrice;
@@ -333,8 +347,8 @@ public class ProSecInfo extends Message {
         this.fMainChipLowPrice = fMainChipLowPrice;
         this.vStrategyId = vStrategyId;
         this.lUptTimeExt = lUptTimeExt;
+        this.bInitiative = bInitiative;
     }
-
 
 
     public boolean equals(Object obj) {
@@ -345,8 +359,8 @@ public class ProSecInfo extends Message {
         } else if (!(obj instanceof ProSecInfo)) {
             return false;
         } else {
-            ProSecInfo other = (ProSecInfo)obj;
-            return TarsUtil.equals(this.sDtSecCode, other.sDtSecCode) && TarsUtil.equals(this.fHighPrice, other.fHighPrice) && TarsUtil.equals(this.fLowPrice, other.fLowPrice) && TarsUtil.equals(this.fIncreasePer, other.fIncreasePer) && TarsUtil.equals(this.fDecreasesPer, other.fDecreasesPer) && TarsUtil.equals(this.bRecvAnnounce, other.bRecvAnnounce) && TarsUtil.equals(this.bRecvResearch, other.bRecvResearch) && TarsUtil.equals(this.isDel, other.isDel) && TarsUtil.equals(this.iCreateTime, other.iCreateTime) && TarsUtil.equals(this.iUpdateTime, other.iUpdateTime) && TarsUtil.equals(this.sName, other.sName) && TarsUtil.equals(this.isHold, other.isHold) && TarsUtil.equals(this.stCommentInfo, other.stCommentInfo) && TarsUtil.equals(this.isAiAlert, other.isAiAlert) && TarsUtil.equals(this.isDKAlert, other.isDKAlert) && TarsUtil.equals(this.vBroadcastTime, other.vBroadcastTime) && TarsUtil.equals(this.fChipHighPrice, other.fChipHighPrice) && TarsUtil.equals(this.fChipLowPrice, other.fChipLowPrice) && TarsUtil.equals(this.fMainChipHighPrice, other.fMainChipHighPrice) && TarsUtil.equals(this.fMainChipLowPrice, other.fMainChipLowPrice) && TarsUtil.equals(this.vStrategyId, other.vStrategyId) && TarsUtil.equals(this.lUptTimeExt, other.lUptTimeExt);
+            ProSecInfo other = (ProSecInfo) obj;
+            return TarsUtil.equals(this.sDtSecCode, other.sDtSecCode) && TarsUtil.equals(this.fHighPrice, other.fHighPrice) && TarsUtil.equals(this.fLowPrice, other.fLowPrice) && TarsUtil.equals(this.fIncreasePer, other.fIncreasePer) && TarsUtil.equals(this.fDecreasesPer, other.fDecreasesPer) && TarsUtil.equals(this.bRecvAnnounce, other.bRecvAnnounce) && TarsUtil.equals(this.bRecvResearch, other.bRecvResearch) && TarsUtil.equals(this.isDel, other.isDel) && TarsUtil.equals(this.iCreateTime, other.iCreateTime) && TarsUtil.equals(this.iUpdateTime, other.iUpdateTime) && TarsUtil.equals(this.sName, other.sName) && TarsUtil.equals(this.isHold, other.isHold) && TarsUtil.equals(this.stCommentInfo, other.stCommentInfo) && TarsUtil.equals(this.isAiAlert, other.isAiAlert) && TarsUtil.equals(this.isDKAlert, other.isDKAlert) && TarsUtil.equals(this.vBroadcastTime, other.vBroadcastTime) && TarsUtil.equals(this.fChipHighPrice, other.fChipHighPrice) && TarsUtil.equals(this.fChipLowPrice, other.fChipLowPrice) && TarsUtil.equals(this.fMainChipHighPrice, other.fMainChipHighPrice) && TarsUtil.equals(this.fMainChipLowPrice, other.fMainChipLowPrice) && TarsUtil.equals(this.vStrategyId, other.vStrategyId) && TarsUtil.equals(this.lUptTimeExt, other.lUptTimeExt) && TarsUtil.equals(this.bInitiative, other.bInitiative);
         }
     }
 
@@ -390,6 +404,7 @@ public class ProSecInfo extends Message {
         }
 
         _os.write(22, this.lUptTimeExt);
+        _os.write(23, this.bInitiative);
     }
 
     public void readFrom(BaseDecodeStream is) {
@@ -407,16 +422,17 @@ public class ProSecInfo extends Message {
         this.iUpdateTime = _is.read(9, false, this.iUpdateTime);
         this.sName = _is.readString(10, false);
         this.isHold = _is.read(11, false, this.isHold);
-        this.stCommentInfo = (CommentInfo)_is.read(12, false, cache_stCommentInfo);
+        this.stCommentInfo = (CommentInfo) _is.read(12, false, cache_stCommentInfo);
         this.isAiAlert = _is.read(13, false, this.isAiAlert);
         this.isDKAlert = _is.read(14, false, this.isDKAlert);
-        this.vBroadcastTime = (List)_is.read(15, false, cache_vBroadcastTime);
+        this.vBroadcastTime = (List) _is.read(15, false, cache_vBroadcastTime);
         this.fChipHighPrice = _is.read(16, false, this.fChipHighPrice);
         this.fChipLowPrice = _is.read(17, false, this.fChipLowPrice);
         this.fMainChipHighPrice = _is.read(18, false, this.fMainChipHighPrice);
         this.fMainChipLowPrice = _is.read(19, false, this.fMainChipLowPrice);
-        this.vStrategyId = (List)_is.read(20, false, cache_vStrategyId);
+        this.vStrategyId = (List) _is.read(20, false, cache_vStrategyId);
         this.lUptTimeExt = _is.read(22, false, this.lUptTimeExt);
+        this.bInitiative=_is.read(23, false, this.bInitiative);
     }
 
     static {

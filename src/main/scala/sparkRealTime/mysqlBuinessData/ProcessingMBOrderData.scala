@@ -7,7 +7,7 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.kudu.Type
 import org.apache.kudu.client.{KuduSession, KuduTable}
 import org.apache.spark.rdd.RDD
-import scalaUtil.DateScalaUtil
+import scalaUtil.{DateScalaUtil, MailUtil}
 
 import scala.collection.mutable
 
@@ -127,8 +127,10 @@ object ProcessingMBOrderData {
 
 
   def doDDL3(line: String, tb_s: String, table_name: String) {
-    println("ddl=====line========" + line)
-    val sqlStr = "\"sql\":\"ALTER TABLE `" + tb_s + "`"
+    println("tb_s:" + tb_s + "table_name:" + table_name + "====ddl=====line========" + line)
+    println("tb_s:" + tb_s + "table_name:" + table_name + "====ddl=====line========" + line)
+    println("tb_s:" + tb_s + "table_name:" + table_name + "====ddl=====line========" + line)
+    /*val sqlStr = "\"sql\":\"ALTER TABLE `" + tb_s + "`"
     val startI = line.indexOf(sqlStr)
     val sub = line.substring(startI)
     val endI = sub.indexOf("}")
@@ -154,38 +156,44 @@ object ProcessingMBOrderData {
         val newName = local(3)
         KuduUtils.alterTableChangeColumn(table_name, coln, newName)
       }
-    }
+    }*/
   }
 
 
   def doDDL4(line: String, tb_s: String, table_name: String) {
-    println("ddl=====line========" + line)
-    val ddlStrs = line.split("\r\n", -1)
-    for (in <- (0 until (ddlStrs.length))) {
-      if (in != 0) {
-        val ddlOneStr = ddlStrs(in).replaceAll("(`|,)", "")
-        val acStrs = ddlOneStr.split(" ", -1)
-        val ac = acStrs(0)
-        val colName = acStrs(2)
-        val addF = ac.indexOf("ADD")
-        val dropF = ac.indexOf("DROP")
-        val changeF = ac.indexOf("CHANGE")
-        if (addF > -1) {
-          val colType = acStrs(4)
-          val reType = colType.replaceAll("\\(.*\\)", "")
-          val im_colt = getDictColumn(reType)
-          KuduUtils.alterTableAddColumn(table_name, colName, im_colt)
-        }
+    try {
+      println("ddl=====line========" + line)
+      //发送邮件
+      MailUtil.sendMailNew("kudu表结构修改", line);
+      val ddlStrs = line.split("\r\n", -1)
+      for (in <- (0 until (ddlStrs.length))) {
+        if (in != 0) {
+          val ddlOneStr = ddlStrs(in).replaceAll("(`|,)", "")
+          val acStrs = ddlOneStr.split(" ", -1)
+          val ac = acStrs(0)
+          val colName = acStrs(2)
+          val addF = ac.indexOf("ADD")
+          val dropF = ac.indexOf("DROP")
+          val changeF = ac.indexOf("CHANGE")
+          if (addF > -1) {
+            val colType = acStrs(4)
+            val reType = colType.replaceAll("\\(.*\\)", "")
+            val im_colt = getDictColumn(reType)
+            KuduUtils.alterTableAddColumn(table_name, colName, im_colt)
+          }
 
-        if (dropF > -1) {
-          KuduUtils.alterTableDeleteColumn(table_name, colName)
-        }
+          if (dropF > -1) {
+            KuduUtils.alterTableDeleteColumn(table_name, colName)
+          }
 
-        if (changeF > -1) {
-          val newName = acStrs(3)
-          KuduUtils.alterTableChangeColumn(table_name, colName, newName)
+          if (changeF > -1) {
+            val newName = acStrs(3)
+            KuduUtils.alterTableChangeColumn(table_name, colName, newName)
+          }
         }
       }
+    } catch {
+      case e: Throwable => e.printStackTrace()
     }
   }
 
@@ -196,6 +204,12 @@ object ProcessingMBOrderData {
     } else {
       json.put(filedName, null)
     }
+  }
+
+  def replaceNewName(json: JSONObject, oldName: String, newName: String) {
+    val filedNameVal = json.getString(oldName)
+    json.remove(oldName)
+    json.put(newName, filedNameVal)
   }
 
 
@@ -235,19 +249,28 @@ object ProcessingMBOrderData {
   }
 
   def getDictColumn(keyStr: String) = {
-    val stringToString = new mutable.HashMap[String, Type]()
-    stringToString.+=(("int", Type.INT32))
-    stringToString.+=(("bigint", Type.INT64))
-    stringToString.+=(("double", Type.DOUBLE))
-    stringToString.+=(("float", Type.FLOAT))
-    stringToString.getOrElse(keyStr, Type.STRING)
+    if ("decimal".indexOf(keyStr) > -1) { //判断是否为浮点类型
+      Type.DOUBLE
+    } else if ("bigint".indexOf(keyStr) > -1) {
+      Type.INT64
+    } else if ("int".indexOf(keyStr) >- 1) {
+      Type.INT32
+    } else if ("double".indexOf(keyStr) > -1) {
+      Type.DOUBLE
+    } else if ("float".indexOf(keyStr) > -1) {
+      Type.FLOAT
+    }else{
+      Type.STRING
+    }
   }
 
   def main(args: Array[String]): Unit = {
-    val str = "{\"database\":\"db_investment\",\"table\":\"t_user_pay_record\",\"type\":\"insert\",\"ts\":1568791911,\"xid\":2951400881,\"commit\":true,\"data\":{\"inner_order\":\"GZG2019091813126334\",\"pay_order\":\"\",\"pay_date\":null,\"account_id\":56018,\"subject_type\":1,\"subject_title\":\"股掌柜-多空信号\",\"days\":0.00,\"total_money\":0.00,\"pay_type\":8,\"pay_time\":\"2019-09-18 07:31:51\",\"privi_start_day\":\"2019-09-18\",\"privi_end_day\":\"2019-09-19\",\"updatetime\":\"2019-09-18 07:31:51\",\"dua\":\"\",\"status\":1,\"check_status\":null,\"subject_id\":\"6\",\"advisor_id\":null,\"consumer_id\":null,\"buyerid\":null,\"openId\":null,\"consumer_phone_num\":\"\",\"create_time\":\"2019-09-18 07:31:51\",\"headimage\":\"https://realsscf.oss-cn-hangzhou.aliyuncs.com/productpicture/tkxh.png\",\"infinite\":0,\"order_amount\":0.00,\"application_id\":1,\"product_id\":\"TZ20180627135136\",\"deadline\":\"1天\",\"remark\":null,\"refund_amount\":0.00,\"refund_time\":\"0000-00-00 00:00:00\",\"clientOrderUUID\":null,\"offline_order\":null,\"open_mode\":null,\"term\":0,\"term_unit\":\"\",\"invoice_id\":0,\"befor_refund_status\":0,\"order_type\":0,\"refund_apply_date\":\"0000-00-00 00:00:00\",\"refund_id\":0}}"
+    val str = "{\"database\":\"db_investment\",\"table\":\"t_user_pay_record\"}";
     val jSONObject = JSON.parseObject(str)
     val nObject = jSONObject.getJSONObject("data")
-    val ssss = nObject.getString("inner_order")
-    println(ssss)
+    jSONObject.put("database", "11111111111")
+    println(jSONObject.toJSONString)
+    jSONObject.remove("database")
+    println(jSONObject.toJSONString)
   }
 }

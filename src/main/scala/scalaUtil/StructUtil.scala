@@ -163,7 +163,8 @@ object StructUtil {
       StructField("vBroadcastTime",ArrayType(IntegerType)),
       StructField("vStrategyId",ArrayType(IntegerType)),
       StructField("updateTime", StringType),
-      StructField("lUptTimeExt", LongType)
+      StructField("lUptTimeExt", LongType),
+      StructField("bInitiative", BooleanType)
     ))
 
   val structPortGroupInfo=StructType(List(

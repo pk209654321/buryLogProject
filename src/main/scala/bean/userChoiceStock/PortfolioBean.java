@@ -38,6 +38,14 @@ public class PortfolioBean implements Serializable {
     private List<Integer> vBroadcastTime;
     private List<Integer> vStrategyId;
     private long lUptTimeExt=0;
+    private boolean bInitiative=true;
+
+    public boolean isbInitiative() {
+        return bInitiative;
+    }
+    public void setbInitiative(boolean bInitiative) {
+        this.bInitiative = bInitiative;
+    }
 
     public long getlUptTimeExt() {
         return lUptTimeExt;

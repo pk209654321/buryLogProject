@@ -28,14 +28,14 @@ import scala.collection.{JavaConversions, mutable}
 object PortfolioMainFunction {
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
-    var sparkConf: SparkConf = new SparkConf().setAppName("PortfolioMainFunction")
+    var sparkConf: SparkConf = new SparkConf().setAppName(s"${this.getClass.getSimpleName}")
     sparkConf.set("spark.rpc.message.maxSize", "256")
     //sparkConf.set("spark.driver.extraJavaOptions", "-XX:PermSize=1g -XX:MaxPermSize=2g");
     sparkConf.set("spark.network.timeout", "3600")
     sparkConf.set("spark.debug.maxToStringFields", "100")
-    if (local) {
-      System.setProperty("HADOOP_USER_NAME", "wangyd")
-      sparkConf = sparkConf.setMaster("local[*]")
+    if (LocalOrLine.isWindows) {
+      sparkConf.setMaster("local[*]")
+      println("----------------------------开发模式")
     }
     //val sc: SparkContext = new SparkContext(sparkConf)
     val spark = SparkSession.builder()
@@ -405,6 +405,7 @@ object PortfolioMainFunction {
           portfolioBean2.setvBroadcastTime(vBroadcastTime)
           portfolioBean2.setvStrategyId(vStrategyId)
           portfolioBean2.setlUptTimeExt(info.getLUptTimeExt)
+          portfolioBean2.setbInitiative(info.getBInitiative)
           array.+=(portfolioBean2)
 
         }
