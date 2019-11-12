@@ -30,7 +30,12 @@ object ProcessingMBArticle {
         var jsonData = new JSONObject();
         if (!line.containsKey("table-alter")) {
           jsonData = line.getJSONObject("data")
-          ProcessingMBOrderData.replaceNewName(jsonData,"sort","sorts")
+          //ProcessingMBOrderData.replaceNewName(jsonData,"sort","sorts")
+          //删除大字段
+          jsonData.remove("abstract_info")
+          jsonData.remove("free_content")
+          jsonData.remove("pay_content")
+          jsonData.remove("sort")
           ProcessingMBOrderData.getRightTimeByName(jsonData,"create_time")
           ProcessingMBOrderData.getRightTimeByName(jsonData,"update_time")
         } else {

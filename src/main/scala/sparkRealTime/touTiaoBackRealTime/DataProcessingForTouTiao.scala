@@ -47,7 +47,7 @@ object DataProcessingForTouTiao {
         val idfa = splits(18) //安卓设备信息
         (user_id, (phone_system, mac, imei, idfa))
       } catch {
-        case e: Exception => println("error log =========" + one.line); ("", ("", "", "", ""))
+        case e: Exception => println(s"DataProcessingForTouTiao_error_log:logType=${one.logType},source=${one.source},line=${one.line}"); ("", ("", "", "", ""))
       }
     })
     //过滤掉空user_id和user_id为"0"的
@@ -64,8 +64,9 @@ object DataProcessingForTouTiao {
     })
     disRdd.foreachPartition(par => {
       // TODO: 加载数据库连接,加载近7天的监测数据
+      DBs.setupAll()
       try {
-        val jcData = NamedDB('collection).readOnly {
+        val jcData = NamedDB('answer).readOnly {
           implicit session =>
             SQL(s"SELECT os,mac,imei,idfa,callback_param FROM monitor_link_info WHERE DATE_ADD(CURDATE(),INTERVAL -7 DAY) <= DATE(create_time)").map(rs => {
               ((rs.get[String]("os"),
@@ -77,7 +78,7 @@ object DataProcessingForTouTiao {
         }
 
         // TODO: 加载已经发送的历史数据
-        val hisData = NamedDB('his).readOnly {
+        val hisData = NamedDB('aurora).readOnly {
           implicit session =>
             SQL(s"SELECT os,mac,imei,idfa FROM monitor_link_info_his").map(rs => {
               (rs.get[String]("os"),
@@ -101,8 +102,11 @@ object DataProcessingForTouTiao {
           idfa
         })*/
         analysisPartition2(par, newData)
+
       } catch {
         case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("头条回调分析警报", e.getCause().getMessage)
+      }finally {
+        DBs.closeAll()
       }
     })
   }
@@ -126,7 +130,7 @@ object DataProcessingForTouTiao {
       val idfa = elem._2._4
       mac = macMd5sum(mac)
       imei = Md5SumUtil.getMd5Sum(imei)
-      println("日志log===========" + elem)
+//      println("日志log===========" + elem)
       if (StringUtils.isNotBlank(phone_system)) {
         for (jc <- newData) {
           val jc_os = jc._1._1
@@ -316,7 +320,7 @@ object DataProcessingForTouTiao {
       case _ =>
     }
     param = s"muid=${muid}&os=${os}&callback=${callback_param}&event_type=0"
-    val insertFlag = NamedDB('offset).localTx {
+    val insertFlag = NamedDB('aurora).localTx {
       HttpRequest.sendGet2(url, param)
       implicit session =>
         SQL("insert INTO monitor_link_info_his (os,mac,imei,idfa) VALUES (?,?,?,?)").bind(os, mac, imei, idfa).update().apply()
@@ -326,6 +330,7 @@ object DataProcessingForTouTiao {
     } else {
       println(jc + "======table monitor_link_info_his insert失败")
     }
+
   }
 
 

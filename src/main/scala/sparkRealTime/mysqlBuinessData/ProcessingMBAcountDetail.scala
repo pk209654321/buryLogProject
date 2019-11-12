@@ -10,7 +10,7 @@ import org.apache.spark.rdd.RDD
   * Author lenovo
   * Date 2019/9/18 17:29
   **/
-object ProcessingMBAcountDetailData {
+object ProcessingMBAcountDetail {
   //todo
   def doProcessingMBData(oneRdd: RDD[(String, String)], db_s: String, tb_s: String, db_t: String, tb_t: String, pk: String, kuduTb: String): Unit = {
     val filterData = oneRdd.map(one => {
@@ -43,8 +43,5 @@ object ProcessingMBAcountDetailData {
       session.flush()
       KuduUtils.closeSession()
     })
-  }
-
-  def main(args: Array[String]): Unit = {
   }
 }

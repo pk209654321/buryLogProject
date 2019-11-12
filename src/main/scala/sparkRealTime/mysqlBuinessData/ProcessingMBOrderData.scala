@@ -2,7 +2,6 @@ package sparkRealTime.mysqlBuinessData
 
 import com.alibaba.fastjson.{JSON, JSONObject}
 import hadoopCode.kudu.KuduUtils
-import hadoopCode.kudu.agent.KuduAgent
 import org.apache.commons.lang3.StringUtils
 import org.apache.kudu.Type
 import org.apache.kudu.client.{KuduSession, KuduTable}
@@ -198,18 +197,22 @@ object ProcessingMBOrderData {
   }
 
   def getRightTimeByName(json: JSONObject, filedName: String) {
-    val filedNameVal = json.getString(filedName)
-    if (StringUtils.isNotBlank(filedNameVal) && !"0000-00-00 00:00:00".equals(filedNameVal)) {
-      json.put(filedName, DateScalaUtil.getAddEight(0, filedNameVal, 8))
-    } else {
-      json.put(filedName, null)
+    if (json != null) {
+      val filedNameVal = json.getString(filedName)
+      if (StringUtils.isNotBlank(filedNameVal) && !"0000-00-00 00:00:00".equals(filedNameVal)) {
+        json.put(filedName, DateScalaUtil.getAddEight(0, filedNameVal, 8))
+      } else {
+        json.put(filedName, null)
+      }
     }
   }
 
   def replaceNewName(json: JSONObject, oldName: String, newName: String) {
-    val filedNameVal = json.getString(oldName)
-    json.remove(oldName)
-    json.put(newName, filedNameVal)
+    if (json != null) {
+      val filedNameVal = json.getString(oldName)
+      json.remove(oldName)
+      json.put(newName, filedNameVal)
+    }
   }
 
 
@@ -253,16 +256,17 @@ object ProcessingMBOrderData {
       Type.DOUBLE
     } else if ("bigint".indexOf(keyStr) > -1) {
       Type.INT64
-    } else if ("int".indexOf(keyStr) >- 1) {
+    } else if ("int".indexOf(keyStr) > -1) {
       Type.INT32
     } else if ("double".indexOf(keyStr) > -1) {
       Type.DOUBLE
     } else if ("float".indexOf(keyStr) > -1) {
       Type.FLOAT
-    }else{
+    } else {
       Type.STRING
     }
   }
+
 
   def main(args: Array[String]): Unit = {
     val str = "{\"database\":\"db_investment\",\"table\":\"t_user_pay_record\"}";

@@ -43,7 +43,7 @@ object TouTiaoBackObject {
       println("----------------------------开发模式")
       //return
     }
-    val ssc = new StreamingContext(sparkConf, Seconds(15))
+    val ssc = new StreamingContext(sparkConf, Seconds(150))
     // TODO:
     DBs.setupAll()
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
@@ -76,7 +76,7 @@ object TouTiaoBackObject {
           }
         }
       } catch {
-        case e: Exception => e.printStackTrace(); //MailUtil.sendMailNew("业务数据同步Kudu", "同步失败"); ssc.stop()
+        case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("头条推送", "同步失败"); ssc.stop()
       }
     })
     // 启动程序，等待程序终止

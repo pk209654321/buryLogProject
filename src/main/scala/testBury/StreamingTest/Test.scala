@@ -1,7 +1,7 @@
 package testBury.StreamingTest
 
 /**
-  * ClassName Test
+  * ClassName ExceptionMsgUtil
   * Description TODO
   * Author lenovo
   * Date 2019/9/11 15:52

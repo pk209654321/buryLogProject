@@ -38,7 +38,7 @@ object BuryLogRealTimeForOnLineTest {
       sparkConf.setMaster("local[*]")
     }
     val sc = new SparkContext(sparkConf)
-    val ssc = new StreamingContext(sc, Seconds(10))
+    val ssc = new StreamingContext(sc, Seconds(5))
 
     // TODO:  
     DBs.setupAll()
