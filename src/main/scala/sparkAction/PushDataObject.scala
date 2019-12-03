@@ -20,7 +20,7 @@ object PushDataObject {
     val local: Boolean = LocalOrLine.judgeLocal()
     var sparkConf: SparkConf = new SparkConf().setAppName("PushDataObject")
     if (local) {
-      System.setProperty("HADOOP_USER_NAME", "wangyd")
+      System.setProperty("HADOOP_USER_NAME", "hive")
       sparkConf = sparkConf.setMaster("local[*]")
     }
     //val sc: SparkContext = new SparkContext(sparkConf)
@@ -31,6 +31,7 @@ object PushDataObject {
     spark.sparkContext.setLogLevel("WARN")
     spark.sparkContext.hadoopConfiguration.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false")
     import spark.implicits._
+
     val dataFrame = spark.sql("select gexin_task_id ,msg_id,transmission_content from  db_message.gexin_task_message_relation")
     val ansData = dataFrame.as[MsgContentData]
     GexinTaskMessageRelation.insertPushDataToHive(ansData, spark)

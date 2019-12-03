@@ -45,7 +45,7 @@ object TouTiaoBackObject {
     }
     val ssc = new StreamingContext(sparkConf, Seconds(150))
     // TODO:
-    DBs.setupAll()
+    DBs.setup('offset)
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
       SQL("select * from " + offsetTableName + " where groupid=? and topic=?").bind(kmg, kmt).map(rs => {
         (TopicAndPartition(rs.string("topic"), rs.int("partitions")), rs.long("offset"))

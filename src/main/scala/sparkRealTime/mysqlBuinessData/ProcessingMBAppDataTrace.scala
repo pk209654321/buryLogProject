@@ -3,6 +3,7 @@ package sparkRealTime.mysqlBuinessData
 import com.alibaba.fastjson.{JSON, JSONObject}
 import hadoopCode.kudu.KuduUtils
 import org.apache.spark.rdd.RDD
+import scalaUtil.MailUtil
 
 /**
   * ClassName ProcessingMBData
@@ -16,7 +17,7 @@ object ProcessingMBAppDataTrace {
       try {
         JSON.parseObject(one._2)
       } catch {
-        case e:Throwable => println("错误数据=========================="+one._2);new JSONObject()
+        case e: Throwable => println("错误数据==========================" + one._2); new JSONObject()
       }
     }).filter(one => {
       val db_name = one.getString("database")
@@ -28,15 +29,19 @@ object ProcessingMBAppDataTrace {
       val session = KuduUtils.getManualSession
       it.foreach(line => {
         var jsonData = new JSONObject();
-        if (!line.containsKey("table-alter")) {
+        val typeStr = line.getString("type")
+        if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
           jsonData = line.getJSONObject("data")
           //针对timestamp类型特殊处理
-          ProcessingMBOrderData.getRightTimeByName(jsonData,"create_time")
+          if (jsonData != null) {
+            ProcessingMBOrderData.getRightTimeByName(jsonData, "create_time")
+          } else {
+            MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
+          }
         } else {
           val sqlStr = line.getString("sql")
           println("------------------------------------------修改语句" + sqlStr)
         }
-        val typeStr = line.getString("type")
         typeStr match {
           case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
           case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)

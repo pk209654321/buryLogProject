@@ -4,7 +4,7 @@ import com.alibaba.fastjson.{JSON, JSONObject}
 import hadoopCode.kudu.KuduUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
-import scalaUtil.DateScalaUtil
+import scalaUtil.{DateScalaUtil, MailUtil}
 
 /**
   * ClassName ProcessingMBData
@@ -12,14 +12,14 @@ import scalaUtil.DateScalaUtil
   * Author lenovo
   * Date 2019/9/18 17:29
   **/
-object ProcessingMBPaymanagerSaleStatement{
+object ProcessingMBPaymanagerSaleStatement {
   //todo
   def doProcessingMBData(oneRdd: RDD[(String, String)], db_s: String, tb_s: String, db_t: String, tb_t: String, kuduTb: String): Unit = {
     val filterData = oneRdd.map(one => {
       try {
-         JSON.parseObject(one._2)
+        JSON.parseObject(one._2)
       } catch {
-        case e:Throwable => println("错误数据=========================="+one._2);new JSONObject()
+        case e: Throwable => println("错误数据==========================" + one._2); new JSONObject()
       }
     }).filter(one => {
       val db_name = one.getString("database")
@@ -30,14 +30,19 @@ object ProcessingMBPaymanagerSaleStatement{
       val session = KuduUtils.getManualSession
       it.foreach(line => {
         var jsonData = new JSONObject();
-        if (!line.containsKey("table-alter")) {
+        val typeStr = line.getString("type")
+        if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
           jsonData = line.getJSONObject("data")
-          ProcessingMBOrderData.getRightTimeByName(jsonData,"update_time")
+          if (jsonData != null) {
+            ProcessingMBOrderData.getRightTimeByName(jsonData, "update_time")
+          } else {
+            MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
+          }
+
         } else {
           val sqlStr = line.getString("sql")
           println("------------------------------------------修改语句" + sqlStr)
         }
-        val typeStr = line.getString("type")
         typeStr match {
           case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
           case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)

@@ -45,26 +45,26 @@ object DataProcessingForTouTiao {
         val imei = splits(15)
         //安卓设备信息
         val idfa = splits(18) //安卓设备信息
-        (user_id, (phone_system, mac, imei, idfa))
+        (phone_system, mac, imei, idfa)
       } catch {
-        case e: Exception => println(s"DataProcessingForTouTiao_error_log:logType=${one.logType},source=${one.source},line=${one.line}"); ("", ("", "", "", ""))
+        case e: Exception => println(s"DataProcessingForTouTiao_error_log:logType=${one.logType},source=${one.source},line=${one.line}");("", "", "", "")
       }
     })
     //过滤掉空user_id和user_id为"0"的
-    val filterData = phoneInfo.filter(one => {
-      val user_id = one._1
-      if (StringUtils.isNotBlank(user_id) && user_id != "0") {
+    val filterData = phoneInfo.filter(line => {
+      val str = line._1
+      if (StringUtils.isNotBlank(str)) {
         true
       } else {
         false
       }
     })
-    val disRdd = filterData.groupByKey().mapValues(one => {
-      one.head
-    })
+    val disRdd = filterData.distinct()
     disRdd.foreachPartition(par => {
       // TODO: 加载数据库连接,加载近7天的监测数据
-      DBs.setupAll()
+      //DBs.setupAll()
+      DBs.setup('answer)
+      DBs.setup('aurora)
       try {
         val jcData = NamedDB('answer).readOnly {
           implicit session =>
@@ -89,30 +89,17 @@ object DataProcessingForTouTiao {
         }
         // TODO: 将检测数据去重并删除历史数据删除
         val newData = (jcData.toMap -- hisData).toList
-        /*val his_mac = hisData.map(line => {
-          val mac = line._2
-          mac
-        })
-        val his_imei = hisData.map(line => {
-          val imei = line._3
-          imei
-        })
-        val his_idfa = hisData.map(line => {
-          val idfa = line._4
-          idfa
-        })*/
+
         analysisPartition2(par, newData)
 
-      } catch {
-        case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("头条回调分析警报", e.getCause().getMessage)
-      }finally {
+      } finally {
         DBs.closeAll()
       }
     })
   }
 
 
-  def analysisPartition2(par: scala.Iterator[(String, (String, String, String, String))]
+  def analysisPartition2(par: scala.Iterator[(String, String, String, String)]
                          , newData: scala.List[((String, String, String, String), String)]) {
     /**
       * 　　* @Description: TODO
@@ -124,10 +111,10 @@ object DataProcessingForTouTiao {
       * 　　*/
     for (elem <- par) {
       val user_id = elem._1
-      val phone_system = elem._2._1
-      var mac = elem._2._2
-      var imei = elem._2._3
-      val idfa = elem._2._4
+      val phone_system = elem._1
+      var mac = elem._2
+      var imei = elem._3
+      val idfa = elem._4
       mac = macMd5sum(mac)
       imei = Md5SumUtil.getMd5Sum(imei)
 //      println("日志log===========" + elem)

@@ -1,6 +1,7 @@
 package sparkAction.portfolioHive
 
 import bean.ans.AnsFather
+import bean.pushData.PushDataGexinTaskMessage
 import com.alibaba.fastjson.JSON
 import com.niufu.tar.bec.{PushControlData, PushData, PushType}
 import conf.ConfigurationManager
@@ -53,14 +54,14 @@ object GexinTaskMessageRelation {
         case _ => one.gexin_task_id
       }
       val msg_id = one.msg_id match {
-        case "" => null
+        case "" => temp
         case _ => one.msg_id
       }
       try {
         val transmission_content = one.transmission_content
-        var pushData = JSON.parseObject(transmission_content, classOf[PushData])
+        var pushData = JSON.parseObject(transmission_content, classOf[PushDataGexinTaskMessage])
         pushData match {
-          case null => pushData = new PushData()
+          case null => pushData = new PushDataGexinTaskMessage()
           case _ =>
         }
         pushData.getStPushType match {
@@ -74,7 +75,8 @@ object GexinTaskMessageRelation {
 
         val strData = pushData.getVtData match {
           case null => null
-          case _ => new String(pushData.getVtData,"utf-8")
+          //case _ => new String(pushData.getVtData,"utf-8")
+          case _=> pushData.getVtData
         }
         PushDataResultToHive(
           msg_id,
@@ -104,7 +106,7 @@ object GexinTaskMessageRelation {
           pushData.getEPushNotificationType,
           pushData.getIBuilderId,
           pushData.getBDefaultCfg)
-      } catch {
+      } /*catch {
         case e:Throwable =>e.printStackTrace(); new PushDataResultToHive(temp,temp,
           temp,
           0,
@@ -125,9 +127,9 @@ object GexinTaskMessageRelation {
           0,
           0,
           false)
-      }
+      }*/
     })
-    dataFinal.repartition(1).createOrReplaceTempView("tempTable")
+    dataFinal.repartition(3).createOrReplaceTempView("tempTable")
     spark.sql(s"insert overwrite table ${TABLERESULT} select * from tempTable")
   }
 

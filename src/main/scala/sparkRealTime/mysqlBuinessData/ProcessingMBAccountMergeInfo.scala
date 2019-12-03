@@ -4,7 +4,7 @@ import com.alibaba.fastjson.{JSON, JSONObject}
 import hadoopCode.kudu.KuduUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.rdd.RDD
-import scalaUtil.DateScalaUtil
+import scalaUtil.{DateScalaUtil, ExceptionMsgUtil, MailUtil}
 
 /**
   * ClassName ProcessingMBData
@@ -26,20 +26,18 @@ object ProcessingMBAccountMergeInfo {
       val session = KuduUtils.getManualSession
       it.foreach(line => {
         var jsonData = new JSONObject();
-        line.containsKey("table-alter")
-        if (!line.containsKey("table-alter")) {
+        val typeStr = line.getString("type")
+        if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
           jsonData = line.getJSONObject("data")
-          val updatetime = jsonData.getString("updatetime")
-          if (StringUtils.isNotBlank(updatetime) && !updatetime.equals("0000-00-00 00:00:00")) {
-            jsonData.put("updatetime", DateScalaUtil.getAddEight(0, updatetime, 8))
-          } else {
-            jsonData.put("updatetime", null)
+          if(jsonData!=null){
+            ProcessingMBOrderData.getRightTimeByName(jsonData, "updatetime")
+          }else{
+            MailUtil.sendMailNew("业务数据同步Kudu_error_line",line.toJSONString)
           }
         } else {
           val sqlStr = line.getString("sql")
           println("------------------------------------------修改语句" + sqlStr)
         }
-        val typeStr = line.getString("type")
         typeStr match {
           case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
           case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)

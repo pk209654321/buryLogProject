@@ -23,7 +23,7 @@ object MysqlBuinessDataRealTime {
 
     val load = ConfigFactory.load()
     //获取偏移量表名称
-    val tableName = load.getString("kafka.mysqlBD.offset")
+    val offsetTable = load.getString("kafka.mysqlBD.offset")
     //kafka地址
     val kbl = load.getString("kafka.broker.list")
     //消费组
@@ -49,9 +49,9 @@ object MysqlBuinessDataRealTime {
     }
     val ssc = new StreamingContext(sparkConf, Seconds(60))
     // TODO:
-    DBs.setupAll()
+    DBs.setup('offset)
     val fromOffsets: Map[TopicAndPartition, Long] = NamedDB('offset).readOnly { implicit session =>
-      SQL("select * from " + tableName + " where groupid=? and topic=?").bind(kmg, kmt).map(rs => {
+      SQL("select * from " + offsetTable + " where groupid=? and topic=?").bind(kmg, kmt).map(rs => {
         (TopicAndPartition(rs.string("topic"), rs.int("partitions")), rs.long("offset"))
       }).list().apply()
     }.toMap
@@ -65,7 +65,6 @@ object MysqlBuinessDataRealTime {
 
     stream.foreachRDD(oneRdd => {
       //todo 测试
-      //ProcessingMBData.doProcessingMBData(oneRdd, "phpmanager", "user_test", "default", "user_test", "id","impala::default.user_test")
       try {
         if (!oneRdd.isEmpty()) {
           //实时处理
@@ -74,8 +73,11 @@ object MysqlBuinessDataRealTime {
           val offsetInfos = offsetRanges.map(line => {
             Seq(line.topic, kmg, line.partition, line.untilOffset)
           })
-          //ProcessingMBAccountMergeInfo.doProcessingMBData(oneRdd, "db_account", "t_account_merge_info", "kudu_real", "t_account_merge_info", "impala::kudu_real.t_account_merge_info")
-          //ProcessingMBUserInvitation.doProcessingMBData(oneRdd, "db_sscf", "t_user_invitation", "kudu_real", "t_user_invitation", "impala::kudu_real.t_user_invitation")
+          try {
+            ProcessingMBAdvisorInfo.doProcessingMBData(oneRdd, "db_investment", "t_advisor_info", "kudu_real", "t_advisor_info", "impala::kudu_real.t_advisor_info")
+          } catch {
+            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_investment.t_advisor_info" + ExceptionMsgUtil.getStackTraceInfo(e))
+          }
           try {
             ProcessingMBArticle.doProcessingMBData(oneRdd, "db_sscf", "article", "kudu_real", "article", "impala::kudu_real.article")
           } catch {
@@ -83,9 +85,9 @@ object MysqlBuinessDataRealTime {
           }
 
           try {
-            ProcessingMBUserProduct.doProcessingMBData(oneRdd, "db_sscf", "t_user_product", "kudu_real", "t_user_product", "impala::kudu_real.t_user_product")
+            //ProcessingMBUserProduct.doProcessingMBData(oneRdd, "db_sscf", "t_user_product", "kudu_real", "t_user_product", "impala::kudu_real.t_user_product")
           } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.t_user_product表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
+            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.t_user_product表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
 
           try {
@@ -99,15 +101,15 @@ object MysqlBuinessDataRealTime {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.app_data_trace表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
           try {
-            ProcessingMBProduct.doProcessingMBData(oneRdd, "db_sscf", "t_product", "kudu_real", "t_product", "impala::kudu_real.t_product")
+            //ProcessingMBProduct.doProcessingMBData(oneRdd, "db_sscf", "t_product", "kudu_real", "t_product", "impala::kudu_real.t_product")
           } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.t_product表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
+            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.t_product表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
 
           try {
-            ProcessingMBPaymanagerSaleStatement.doProcessingMBData(oneRdd, "db_sscf", "paymanager_sale_statement", "kudu_real", "paymanager_sale_statement", "impala::kudu_real.paymanager_sale_statement")
+            //ProcessingMBPaymanagerSaleStatement.doProcessingMBData(oneRdd, "db_sscf", "paymanager_sale_statement", "kudu_real", "paymanager_sale_statement", "impala::kudu_real.paymanager_sale_statement")
           } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.paymanager_sale_statement表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
+            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.paymanager_sale_statement表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
 
           try {
@@ -124,14 +126,13 @@ object MysqlBuinessDataRealTime {
 
           //处理订单数据新方式
           try {
-            ProcessingMBOrderDataNew.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "impala::kudu_real.t_user_pay_record")
+            //ProcessingMBOrderDataNew.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "impala::kudu_real.t_user_pay_record")
           } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_investment.t_user_pay_record表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
+            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_investment.t_user_pay_record表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
-          //ProcessingMBOrderData.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "account_id,inner_order", "impala::kudu_real.t_user_pay_record")
           NamedDB('offset).localTx {
             implicit session =>
-              SQL("REPLACE INTO " + tableName + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")
+              SQL("REPLACE INTO " + offsetTable + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")
                 .batch(offsetInfos: _*).apply()
           }
         }

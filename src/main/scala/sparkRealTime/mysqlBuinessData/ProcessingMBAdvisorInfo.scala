@@ -7,12 +7,11 @@ import scalaUtil.MailUtil
 
 /**
   * ClassName ProcessingMBData
-  * Description //TODO db_investment.t_user_pay_record -------> impala::kudu_real.t_user_pay_record
+  * Description TODO db_investment.t_user_pay_record -------> impala::kudu_real.t_user_pay_record
   * Author lenovo
   * Date 2019/9/18 17:29
   **/
-object ProcessingMBUserInvitation {
-  //todo
+object ProcessingMBAdvisorInfo {
   def doProcessingMBData(oneRdd: RDD[(String, String)], db_s: String, tb_s: String, db_t: String, tb_t: String, kuduTb: String): Unit = {
     val filterData = oneRdd.map(one => {
       try {
@@ -25,6 +24,7 @@ object ProcessingMBUserInvitation {
       val tb_name = one.getString("table")
       db_s.equals(db_name) && tb_s.equals(tb_name)
     })
+
     filterData.foreachPartition(it => {
       val session = KuduUtils.getManualSession
       it.foreach(line => {
@@ -33,12 +33,12 @@ object ProcessingMBUserInvitation {
         if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
           jsonData = line.getJSONObject("data")
           if (jsonData != null) {
-            ProcessingMBOrderData.getRightTimeByName(jsonData, "authorize_time")
-            ProcessingMBOrderData.getRightTimeByName(jsonData, "invite_time")
+            ProcessingMBOrderData.getRightTimeByName(jsonData, "create_time")
+            ProcessingMBOrderData.getRightTimeByName(jsonData, "update_time")
+            ProcessingMBOrderData.getRightTimeByName(jsonData, "top_time")
           } else {
             MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
           }
-
         } else {
           val sqlStr = line.getString("sql")
           println("------------------------------------------修改语句" + sqlStr)
@@ -54,8 +54,5 @@ object ProcessingMBUserInvitation {
       session.flush()
       KuduUtils.closeSession()
     })
-  }
-
-  def main(args: Array[String]): Unit = {
   }
 }

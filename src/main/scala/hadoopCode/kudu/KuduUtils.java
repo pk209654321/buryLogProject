@@ -252,8 +252,8 @@ public class KuduUtils {
         Type string = Type.STRING;
         alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);*/
         HashMap<String, String> stringStringHashMap = new HashMap<>();
-        stringStringHashMap.put("productcode", "productCode");
+        stringStringHashMap.put("clientorderuuid", "clientOrderUUID");
 
-        renameImpalaKuduField(stringStringHashMap, "impala::kudu_real.article");
+        renameImpalaKuduField(stringStringHashMap, "impala::kudu_ods.t_order");
     }
 }

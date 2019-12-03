@@ -140,13 +140,13 @@
             <version>1.5</version>
         </dependency>
 
-       <!--<dependency>
-            <groupId>com.cloudera.impala.jdbc</groupId>
-            <artifactId>ImpalaJDBC41</artifactId>
-            <version>2.6.12</version>
-        </dependency>-->
+        <!--<dependency>
+             <groupId>com.cloudera.impala.jdbc</groupId>
+             <artifactId>ImpalaJDBC41</artifactId>
+             <version>2.6.12</version>
+         </dependency>-->
         <!--kudu-->
-       <dependency>
+        <dependency>
             <groupId>org.apache.kudu</groupId>
             <artifactId>kudu-client</artifactId>
             <version>1.7.0</version>

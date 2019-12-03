@@ -60,7 +60,7 @@ object BuryLoginReportNew {
     //取每个user_id的前一百条
     userIdTimeList.foreach(line => {
       val user_id = line._1
-      line._2.sorted.take(100).foreach(access_time => {
+      line._2.take(1).foreach(access_time => {
         try {
         val time_login: String = DateScalaUtil.tranTimeToString(access_time, 0)
         val data: Data = new Data()
@@ -108,7 +108,7 @@ object BuryLoginReportNew {
     userIdTimeList.foreach(line=> {
       val user_id = line._1
       val time_list = line._2
-      time_list.sorted.take(100).foreach(access_time => {
+      time_list.take(1).foreach(access_time => {
         try {
           val time_login: String = DateScalaUtil.tranTimeToString(access_time, 0)
           val data: Data = new Data()

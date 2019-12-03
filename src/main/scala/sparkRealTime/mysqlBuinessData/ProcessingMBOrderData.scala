@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.kudu.Type
 import org.apache.kudu.client.{KuduSession, KuduTable}
 import org.apache.spark.rdd.RDD
-import scalaUtil.{DateScalaUtil, MailUtil}
+import scalaUtil.{DateScalaUtil, ExceptionMsgUtil, MailUtil}
 
 import scala.collection.mutable
 
@@ -81,13 +81,17 @@ object ProcessingMBOrderData {
 
 
   def doUpsert3(tableName: String, session: KuduSession, json: JSONObject) {
-    val upsert = KuduUtils.createUpsert(tableName, json)
-    session.apply(upsert)
+    if (json != null) {
+      val upsert = KuduUtils.createUpsert(tableName, json)
+      session.apply(upsert)
+    }
   }
 
   def doDelete3(tableName: String, session: KuduSession, json: JSONObject) {
-    val delete = KuduUtils.createDeleteNew(tableName, json)
-    session.apply(delete)
+    if (json != null) {
+      val delete = KuduUtils.createDeleteNew(tableName, json)
+      session.apply(delete)
+    }
   }
 
   def doUpsert(line: String, db_t: String, tb_t: String) = {
@@ -162,8 +166,6 @@ object ProcessingMBOrderData {
   def doDDL4(line: String, tb_s: String, table_name: String) {
     try {
       println("ddl=====line========" + line)
-      //发送邮件
-      MailUtil.sendMailNew("kudu表结构修改", line);
       val ddlStrs = line.split("\r\n", -1)
       for (in <- (0 until (ddlStrs.length))) {
         if (in != 0) {
@@ -192,7 +194,9 @@ object ProcessingMBOrderData {
         }
       }
     } catch {
-      case e: Throwable => e.printStackTrace()
+      case e: Exception => e.printStackTrace();MailUtil.sendMailNew("新改版业务数据同步Kudu_更改表结构", table_name + ExceptionMsgUtil.getStackTraceInfo(e))
+    }finally {
+      MailUtil.sendMailNew("kudu表结构修改", line);
     }
   }
 

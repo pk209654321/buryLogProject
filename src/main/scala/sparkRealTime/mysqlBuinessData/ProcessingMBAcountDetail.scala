@@ -3,6 +3,7 @@ package sparkRealTime.mysqlBuinessData
 import com.alibaba.fastjson.{JSON, JSONObject}
 import hadoopCode.kudu.KuduUtils
 import org.apache.spark.rdd.RDD
+import scalaUtil.MailUtil
 
 /**
   * ClassName ProcessingMBData
@@ -24,14 +25,18 @@ object ProcessingMBAcountDetail {
       val session = KuduUtils.getManualSession
       it.foreach(line => {
         var json = new JSONObject();
-        line.containsKey("table-alter")
-        if (!line.containsKey("table-alter")) {
+        val typeStr = line.getString("type")
+        if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
           json = line.getJSONObject("data")
+          if (json != null) {
+
+          } else {
+            MailUtil.sendMailNew("业务数据同步Kudu_error_line",line.toJSONString)
+          }
         } else {
           val sqlStr = line.getString("sql")
           println("------------------------------------------修改语句" + sqlStr)
         }
-        val typeStr = line.getString("type")
         typeStr match {
           case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, json)
           case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, json)
