@@ -27,30 +27,33 @@ object ProcessingMBOfflineOrder {
     })
 
     filterData.foreachPartition(it => {
-      val session = KuduUtils.getManualSession
-      it.foreach(line => {
-        var jsonData = new JSONObject();
-        val typeStr = line.getString("type")
-        if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
-          jsonData = line.getJSONObject("data")
-          if (jsonData != null) {
+      try {
+        val session = KuduUtils.getManualSession
+        it.foreach(line => {
+          var jsonData = new JSONObject();
+          val typeStr = line.getString("type")
+          if (typeStr.equals("insert") || typeStr.equals("update") || typeStr.equals("delete")) {
+            jsonData = line.getJSONObject("data")
+            if (jsonData != null) {
+            } else {
+              MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
+            }
           } else {
-            MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
+            val sqlStr = line.getString("sql")
+            println("------------------------------------------修改语句" + sqlStr)
           }
-        } else {
-          val sqlStr = line.getString("sql")
-          println("------------------------------------------修改语句" + sqlStr)
-        }
-        typeStr match {
-          case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
-          case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
-          case "delete" => ProcessingMBOrderData.doDelete3(kuduTb, session, jsonData)
-          case "table-alter" => ProcessingMBOrderData.doDDL4(line.getString("sql"), tb_s, kuduTb)
-          case _ =>
-        }
-      })
-      session.flush()
-      KuduUtils.closeSession()
+          typeStr match {
+            case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
+            case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
+            case "delete" => ProcessingMBOrderData.doDelete3(kuduTb, session, jsonData)
+            case "table-alter" => ProcessingMBOrderData.doDDL4(line.getString("sql"), tb_s, kuduTb)
+            case _ =>
+          }
+        })
+        session.flush()
+      } finally {
+        KuduUtils.closeSession()
+      }
     })
   }
 }

@@ -74,6 +74,12 @@ object MysqlBuinessDataRealTime {
             Seq(line.topic, kmg, line.partition, line.untilOffset)
           })
           try {
+            ProcessingMBSpecialColumnInfo.doProcessingMBData(oneRdd, "db_sscf", "special_column_info", "kudu_real", "special_column_info", "impala::kudu_real.special_column_info")
+          } catch {
+            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.special_column_info" + ExceptionMsgUtil.getStackTraceInfo(e))
+          }
+
+          try {
             ProcessingMBAdvisorInfo.doProcessingMBData(oneRdd, "db_investment", "t_advisor_info", "kudu_real", "t_advisor_info", "impala::kudu_real.t_advisor_info")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_investment.t_advisor_info" + ExceptionMsgUtil.getStackTraceInfo(e))
@@ -85,32 +91,17 @@ object MysqlBuinessDataRealTime {
           }
 
           try {
-            //ProcessingMBUserProduct.doProcessingMBData(oneRdd, "db_sscf", "t_user_product", "kudu_real", "t_user_product", "impala::kudu_real.t_user_product")
-          } catch {
-            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.t_user_product表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
-
-          try {
             ProcessingMBNfAcCustomerAdvisorQrcodeInfo.doProcessingMBData(oneRdd, "db_account", "nf_ac_customer_advisor_qrcode_info", "kudu_real", "nf_ac_customer_advisor_qrcode_info", "impala::kudu_real.nf_ac_customer_advisor_qrcode_info")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_account.nf_ac_customer_advisor_qrcode_info表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
+
           try {
             ProcessingMBAppDataTrace.doProcessingMBData(oneRdd, "db_sscf", "app_data_trace", "kudu_real", "app_data_trace", "impala::kudu_real.app_data_trace")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.app_data_trace表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
-          try {
-            //ProcessingMBProduct.doProcessingMBData(oneRdd, "db_sscf", "t_product", "kudu_real", "t_product", "impala::kudu_real.t_product")
-          } catch {
-            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.t_product表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
 
-          try {
-            //ProcessingMBPaymanagerSaleStatement.doProcessingMBData(oneRdd, "db_sscf", "paymanager_sale_statement", "kudu_real", "paymanager_sale_statement", "impala::kudu_real.paymanager_sale_statement")
-          } catch {
-            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_sscf.paymanager_sale_statement表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
 
           try {
             ProcessingMBAcountDetail.doProcessingMBData(oneRdd, "db_account", "t_account_detail", "kudu_real", "t_account_detail", "iAccountId", "impala::kudu_real.t_account_detail")
@@ -124,12 +115,6 @@ object MysqlBuinessDataRealTime {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_account.t_account_resigter_info表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
           }
 
-          //处理订单数据新方式
-          try {
-            //ProcessingMBOrderDataNew.doProcessingMBData(oneRdd, "db_investment", "t_user_pay_record", "kudu_real", "t_user_pay_record", "impala::kudu_real.t_user_pay_record")
-          } catch {
-            case e: Exception => //e.printStackTrace(); MailUtil.sendMailNew("业务数据同步Kudu", "db_investment.t_user_pay_record表同步失败" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
           NamedDB('offset).localTx {
             implicit session =>
               SQL("REPLACE INTO " + offsetTable + " (topic, groupid, partitions,offset) VALUES (?,?,?,?)")

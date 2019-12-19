@@ -26,38 +26,41 @@ object ProcessingMBArticle {
     })
 
     filterData.foreachPartition(it => {
-      val session = KuduUtils.getManualSession
-      it.foreach(line => {
-        var jsonData = new JSONObject();
-        val typeStr = line.getString("type")
-        if (typeStr.equals("insert")||typeStr.equals("update")||typeStr.equals("delete")) {
-          jsonData = line.getJSONObject("data")
-          //ProcessingMBOrderData.replaceNewName(jsonData,"sort","sorts")
-          //删除大字段
-          if (jsonData != null) {
-            jsonData.remove("abstract_info")
-            jsonData.remove("free_content")
-            jsonData.remove("pay_content")
-            jsonData.remove("sort")
-            ProcessingMBOrderData.getRightTimeByName(jsonData, "create_time")
-            ProcessingMBOrderData.getRightTimeByName(jsonData, "update_time")
+      try {
+        val session = KuduUtils.getManualSession
+        it.foreach(line => {
+          var jsonData = new JSONObject();
+          val typeStr = line.getString("type")
+          if (typeStr.equals("insert") || typeStr.equals("update") || typeStr.equals("delete")) {
+            jsonData = line.getJSONObject("data")
+            //ProcessingMBOrderData.replaceNewName(jsonData,"sort","sorts")
+            //删除大字段
+            if (jsonData != null) {
+              jsonData.remove("abstract_info")
+              jsonData.remove("free_content")
+              jsonData.remove("pay_content")
+              jsonData.remove("sort")
+              ProcessingMBOrderData.getRightTimeByName(jsonData, "create_time")
+              ProcessingMBOrderData.getRightTimeByName(jsonData, "update_time")
+            } else {
+              MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
+            }
           } else {
-            MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
+            val sqlStr = line.getString("sql")
+            println("------------------------------------------修改语句" + sqlStr)
           }
-        } else {
-          val sqlStr = line.getString("sql")
-          println("------------------------------------------修改语句" + sqlStr)
-        }
-        typeStr match {
-          case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
-          case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
-          case "delete" => ProcessingMBOrderData.doDelete3(kuduTb, session, jsonData)
-          case "table-alter" => ProcessingMBOrderData.doDDL4(line.getString("sql"), tb_s, kuduTb)
-          case _ =>
-        }
-      })
-      session.flush()
-      KuduUtils.closeSession()
+          typeStr match {
+            case "insert" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
+            case "update" => ProcessingMBOrderData.doUpsert3(kuduTb, session, jsonData)
+            case "delete" => ProcessingMBOrderData.doDelete3(kuduTb, session, jsonData)
+            case "table-alter" => ProcessingMBOrderData.doDDL4(line.getString("sql"), tb_s, kuduTb)
+            case _ =>
+          }
+        })
+        session.flush()
+      } finally {
+        KuduUtils.closeSession()
+      }
     })
   }
 }

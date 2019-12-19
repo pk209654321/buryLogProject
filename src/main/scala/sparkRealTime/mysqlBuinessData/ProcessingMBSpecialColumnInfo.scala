@@ -11,7 +11,7 @@ import scalaUtil.MailUtil
   * Author lenovo
   * Date 2019/9/18 17:29
   **/
-object ProcessingMBNfAcCustomerAdvisorQrcodeInfo {
+object ProcessingMBSpecialColumnInfo {
   def doProcessingMBData(oneRdd: RDD[(String, String)], db_s: String, tb_s: String, db_t: String, tb_t: String, kuduTb: String): Unit = {
     val filterData = oneRdd.map(one => {
       try {
@@ -34,7 +34,9 @@ object ProcessingMBNfAcCustomerAdvisorQrcodeInfo {
           if (typeStr.equals("insert") || typeStr.equals("update") || typeStr.equals("delete")) {
             jsonData = line.getJSONObject("data")
             if (jsonData != null) {
-
+              jsonData.remove("abstract_info")
+              ProcessingMBOrderData.getRightTimeByName(jsonData, "create_time")
+              ProcessingMBOrderData.getRightTimeByName(jsonData, "update_time")
             } else {
               MailUtil.sendMailNew("业务数据同步Kudu_error_line", line.toJSONString)
             }

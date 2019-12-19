@@ -155,6 +155,13 @@ public class KuduUtils {
         client.alterTable(tableName, alterTableOptions);
     }
 
+    public static void alterTableName(String tableName, String newName) throws KuduException {
+        KuduClient client = Kudu.INSTANCE.client();
+        AlterTableOptions alterTableOptions = new AlterTableOptions();
+        alterTableOptions.renameTable(newName);
+        client.alterTable(tableName, alterTableOptions);
+    }
+
 
     private static void fillRow(PartialRow row, ColumnSchema colSchema, JSONObject data) {
         String name = colSchema.getName();
@@ -243,7 +250,8 @@ public class KuduUtils {
 
     public static void closeSession() {
         KuduSession session = threadLocal.get();
-        threadLocal.set(null);
+        //threadLocal.set(null);
+        threadLocal.remove();
         Kudu.INSTANCE.closeSession(session);
     }
 
@@ -251,9 +259,9 @@ public class KuduUtils {
         /*alterTableDeleteColumn("impala::kudu_real.t_user_pay_record", "clientorderuuid");
         Type string = Type.STRING;
         alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);*/
-        HashMap<String, String> stringStringHashMap = new HashMap<>();
-        stringStringHashMap.put("clientorderuuid", "clientOrderUUID");
+      /*  HashMap<String, String> stringStringHashMap = new HashMap<>();
+        stringStringHashMap.put("clientorderuuid", "clientOrderUUID");*/
 
-        renameImpalaKuduField(stringStringHashMap, "impala::kudu_ods.t_order");
+        //renameImpalaKuduField(stringStringHashMap, "impala::kudu_ods.t_order");
     }
 }

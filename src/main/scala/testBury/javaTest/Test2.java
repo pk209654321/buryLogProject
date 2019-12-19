@@ -8,15 +8,13 @@ package testBury.javaTest;
  **/
 public class Test2 {
     public static void main(String[] args) {
-        String sub="123";
-        int[] intarry=new int[sub.length()];
-        for(int i=0;i<sub.length();i++)
-        {
-            intarry[i]=Integer.parseInt(String.valueOf(sub.charAt(i)));
-        }
-        for(int i=0;i<intarry.length;i++)
-        {
-            System.out.println(intarry[i]);
+        int n=100;
+        for (int i = n; i > 1; i /= 2) {
+            System.out.println("等待1分钟");
+            System.out.println("等待1分钟");
+            System.out.println("等待1分钟");
+            System.out.println("等待1分钟");
+            System.out.println("吃一半面包");
         }
     }
 }
