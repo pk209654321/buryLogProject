@@ -127,13 +127,13 @@ values (
       .option("password", PASSWORD)
       .option("dbtable", s"(select * from ${TABLENAME} where conv_type='APP_ACTIVE') as t1")
       .load().createOrReplaceTempView("aurora_mysql_active")
-    //读取近两天注册数据(已经推送给极光)
+    //读取近两天注册数据
     spark.read.format("jdbc")
       .option("url", URL1)
       .option("driver", DRIVER1)
       .option("user", USER1)
       .option("password", PASSWORD1)
-      .option("dbtable", s"(select sGUID from t_account_resigter_info WHERE time >= UNIX_TIMESTAMP(DATE_SUB(curdate(),INTERVAL 1 DAY)) and sGUID <> '' and sPhone <> '') as t1")
+      .option("dbtable", s"(select guid from t_account_resigter_info WHERE create_time >= DATE_SUB(curdate(),INTERVAL 1 DAY) and guid <> '' and phone <> '') as t1")
       .load().createOrReplaceTempView("register_mysql")
 
     //根据注册表先->过滤注册历史数据->匹配激活历史数据->推送新注册数据
@@ -145,16 +145,16 @@ values (
         | ama.conv_type,
         | ama.access_time,
         | ama.hp_stat_date
-        |  from  (select r.sGUID from register_mysql r left join
+        |  from  (select r.guid from register_mysql r left join
         |aurora_mysql_register a
-        |on r.sGUID = a.guid
+        |on r.guid = a.guid
         |where a.guid is null) t1
         |inner Join aurora_mysql_active ama
-        |on t1.sGUID=ama.guid
+        |on t1.guid=ama.guid
       """.stripMargin
     spark.sql(tempSql).repartition(1)
       .foreachPartition(it => {
-        DBs.setupAll()
+        DBs.setup('aurora)
         it.foreach(line => {
           try {
             val guid = line.getAs[String]("guid")

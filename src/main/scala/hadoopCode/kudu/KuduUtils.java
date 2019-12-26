@@ -256,12 +256,12 @@ public class KuduUtils {
     }
 
     public static void main(String[] args) throws KuduException {
-        /*alterTableDeleteColumn("impala::kudu_real.t_user_pay_record", "clientorderuuid");
+       /* alterTableDeleteColumn("impala::kudu_real.t_user_pay_record", "clientorderuuid");
         Type string = Type.STRING;
         alterTableAddColumn("impala::kudu_real.t_user_pay_record", "clientOrderUUID", string);*/
-      /*  HashMap<String, String> stringStringHashMap = new HashMap<>();
-        stringStringHashMap.put("clientorderuuid", "clientOrderUUID");*/
+        HashMap<String, String> stringStringHashMap = new HashMap<>();
+        stringStringHashMap.put("clientorderuuid", "clientOrderUUID");
 
-        //renameImpalaKuduField(stringStringHashMap, "impala::kudu_ods.t_order");
+        renameImpalaKuduField(stringStringHashMap, "impala::kudu_ods.t_order");
     }
 }

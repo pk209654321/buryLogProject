@@ -77,7 +77,7 @@ public enum Kudu {
         　　*/
         KuduSession session = client.newSession();
         session.setFlushMode(SessionConfiguration.FlushMode.MANUAL_FLUSH);
-        session.setMutationBufferSpace(100000);
+        session.setMutationBufferSpace(500000);
         return session;
     }
 

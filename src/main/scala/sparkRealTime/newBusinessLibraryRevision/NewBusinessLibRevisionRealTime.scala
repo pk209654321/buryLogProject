@@ -1,6 +1,8 @@
 package sparkRealTime.newBusinessLibraryRevision
 
+import com.alibaba.fastjson.{JSON, JSONObject}
 import com.typesafe.config.ConfigFactory
+import hadoopCode.kudu.KuduUtils
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
@@ -40,7 +42,7 @@ object NewBusinessLibRevisionRealTime {
 
     val sparkConf = new SparkConf().setAppName("BuryLogRealTimeForOnLine")
     sparkConf.set("spark.streaming.kafka.maxRatePartition", "20000") //每个partitioin每秒处理的条数
-    sparkConf.set("spark.streaming.backpressure.enabled","true");
+    sparkConf.set("spark.streaming.backpressure.enabled", "true");
 
     //sparkConf.set("spark.streaming.backpressure.enabled", "true") //反压
     if (LocalOrLine.isWindows) {
@@ -65,17 +67,96 @@ object NewBusinessLibRevisionRealTime {
     }
 
     stream.foreachRDD(oneRdd => {
-      //todo 测试
-      //ProcessingMBData.doProcessingMBData(oneRdd, "phpmanager", "user_test", "default", "user_test", "id","impala::default.user_test")
       try {
         if (!oneRdd.isEmpty()) {
-          try {
-            ProcessingMBGiftOrder.doProcessingMBData(oneRdd, "db_order", "t_gift_order", "kudu_ods", "t_gift_order", "impala::kudu_ods.t_gift_order")
+          val filterDataTemp = oneRdd.map(line => {
+            try {
+              JSON.parseObject(line._2)
+            } catch {
+              case e: Throwable => println("错误数据==========================" + line._2); new JSONObject()
+            }
+          }).filter(one => {
+            val db_name = one.getString("database")
+            val tb_name = one.getString("table")
+            if (
+              ("db_order".equals(db_name) && "t_gift_order".equals(tb_name)) ||
+                ("db_order".equals(db_name) && "t_order".equals(tb_name)) ||
+                ("db_order".equals(db_name) && "t_order_detail".equals(tb_name)) ||
+                ("db_permissions".equals(db_name) && "t_permission_detail".equals(tb_name)) ||
+                ("db_goods".equals(db_name) && "t_product".equals(tb_name))
+            ) {
+              true
+            } else {
+              false
+            }
+          })
+
+          filterDataTemp.foreachPartition(line => {
+            try {
+              val session = KuduUtils.getManualSession
+              line.foreach(one => {
+                val db_name = one.getString("database")
+                val tb_name = one.getString("table")
+                try {
+                  if ("db_order".equals(db_name) && "t_gift_order".equals(tb_name)) {
+                    ProcessingMBGiftOrder.doProcessingMBData2(session, one, "db_order", "t_gift_order", "kudu_ods", "t_gift_order", "impala::kudu_ods.t_gift_order")
+                  }
+                } catch {
+                  case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_gift_order" + ExceptionMsgUtil.getStackTraceInfo(e))
+                }
+
+                try {
+                  if ("db_order".equals(db_name) && "t_order".equals(tb_name)) {
+                    ProcessingMBOrder.doProcessingMBData2(session, one, "db_order", "t_order", "kudu_ods", "t_order", "impala::kudu_ods.t_order")
+                  }
+                } catch {
+                  case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_order" + ExceptionMsgUtil.getStackTraceInfo(e))
+                }
+
+                try {
+                  if ("db_order".equals(db_name) && "t_order_detail".equals(tb_name)) {
+                    ProcessingMBOrderDetail.doProcessingMBData2(session, one, "db_order", "t_order_detail", "kudu_ods", "t_order_detail", "impala::kudu_ods.t_order_detail")
+                  }
+                } catch {
+                  case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_order_detail" + ExceptionMsgUtil.getStackTraceInfo(e))
+                }
+
+                try {
+                  if ("db_permissions".equals(db_name) && "t_permission_detail".equals(tb_name)) {
+                    ProcessingMBPermissionDetail.doProcessingMBData2(session, one, "db_permissions", "t_permission_detail", "kudu_ods", "t_permission_detail", "impala::kudu_ods.t_permission_detail")
+                  }
+                } catch {
+                  case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_permissions.t_permission_detail" + ExceptionMsgUtil.getStackTraceInfo(e))
+                }
+
+                try {
+                  if ("db_goods".equals(db_name) && "t_product".equals(tb_name)) {
+                    ProcessingMBProduct.doProcessingMBData2(session, one, "db_goods", "t_product", "kudu_ods", "t_product", "impala::kudu_ods.t_product")
+                  }
+                } catch {
+                  case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_goods.t_product" + ExceptionMsgUtil.getStackTraceInfo(e))
+                }
+              })
+              session.flush()
+            } finally {
+              KuduUtils.closeSession()
+            }
+          })
+
+          /*try {
+            ProcessingMBGiftOrder.doProcessingMBData(filterDataTemp, "db_order", "t_gift_order", "kudu_ods", "t_gift_order", "impala::kudu_ods.t_gift_order")
+
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_gift_order" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
+          }*/
 
-          try {
+          /*try {
+            ProcessingMBOrder.doProcessingMBData(filterDataTemp, "db_order", "t_order", "kudu_ods", "t_order", "impala::kudu_ods.t_order")
+          } catch {
+            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_order" + ExceptionMsgUtil.getStackTraceInfo(e))
+          }*/
+
+          /*try {
             ProcessingMBHistoryOrder.doProcessingMBData(oneRdd, "db_order", "t_history_order", "kudu_ods", "t_history_order", "impala::kudu_ods.t_history_order")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_history_order" + ExceptionMsgUtil.getStackTraceInfo(e))
@@ -91,33 +172,28 @@ object NewBusinessLibRevisionRealTime {
             ProcessingMBOfflineOrder.doProcessingMBData(oneRdd, "db_order", "t_offline_order", "kudu_ods", "t_offline_order", "impala::kudu_ods.t_offline_order")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_offline_order" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
+          }*/
 
-          try {
-            ProcessingMBOrder.doProcessingMBData(oneRdd, "db_order", "t_order", "kudu_ods", "t_order", "impala::kudu_ods.t_order")
-          } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_order" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
-          try {
-            ProcessingMBOrderDetail.doProcessingMBData(oneRdd, "db_order", "t_order_detail", "kudu_ods", "t_order_detail", "impala::kudu_ods.t_order_detail")
-          } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_order_detail" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
-          try {
-            ProcessingMBPermission.doProcessingMBData(oneRdd, "db_permissions", "t_permission", "kudu_ods", "t_permission", "impala::kudu_ods.t_permission")
-          } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_permissions.t_permission" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
-          try {
-            ProcessingMBPermissionDetail.doProcessingMBData(oneRdd, "db_permissions", "t_permission_detail", "kudu_ods", "t_permission_detail", "impala::kudu_ods.t_permission_detail")
-          } catch {
-            case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_permissions.t_permission_detail" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
-          try {
-            ProcessingMBProduct.doProcessingMBData(oneRdd, "db_goods", "t_product", "kudu_ods", "t_product", "impala::kudu_ods.t_product")
+          /* try {
+             ProcessingMBOrderDetail.doProcessingMBData(filterDataTemp, "db_order", "t_order_detail", "kudu_ods", "t_order_detail", "impala::kudu_ods.t_order_detail")
+           } catch {
+             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_order_detail" + ExceptionMsgUtil.getStackTraceInfo(e))
+           }*/
+          /* try {
+             ProcessingMBPermission.doProcessingMBData(oneRdd, "db_permissions", "t_permission", "kudu_ods", "t_permission", "impala::kudu_ods.t_permission")
+           } catch {
+             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_permissions.t_permission" + ExceptionMsgUtil.getStackTraceInfo(e))
+           }*/
+          /* try {
+             ProcessingMBPermissionDetail.doProcessingMBData(filterDataTemp, "db_permissions", "t_permission_detail", "kudu_ods", "t_permission_detail", "impala::kudu_ods.t_permission_detail")
+           } catch {
+             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_permissions.t_permission_detail" + ExceptionMsgUtil.getStackTraceInfo(e))
+           }*/
+         /* try {
+            ProcessingMBProduct.doProcessingMBData(filterDataTemp, "db_goods", "t_product", "kudu_ods", "t_product", "impala::kudu_ods.t_product")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_goods.t_product" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
+          }*/
 
 
           //实时处理

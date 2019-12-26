@@ -22,12 +22,12 @@ case class AnswerTable(id: Long, user_id: String, ans_arry: ListBuffer[String], 
 object UserAnswerObject {
   def main(args: Array[String]): Unit = {
     val local: Boolean = LocalOrLine.judgeLocal()
-    var sparkConf: SparkConf = new SparkConf().setAppName("UserAnswerObject")
+    var sparkConf: SparkConf = new SparkConf().setAppName(s"${this.getClass.getSimpleName}")
     sparkConf.set("spark.rpc.message.maxSize", "256")
     sparkConf.set("spark.network.timeout", "3600")
     sparkConf.set("spark.debug.maxToStringFields", "100")
     if (local) {
-      System.setProperty("HADOOP_USER_NAME", "wangyd")
+      System.setProperty("HADOOP_USER_NAME", "hive")
       sparkConf = sparkConf.setMaster("local[*]")
     }
     //val sc: SparkContext = new SparkContext(sparkConf)

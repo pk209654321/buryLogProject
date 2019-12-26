@@ -17,7 +17,7 @@ import scalikejdbc.config.DBs
   * Author lenovo
   * Date 2019/3/5 14:10
   **/
-object NewBusinessLibRevisionRealTime {
+object NewBusinessLibRevisionRealTimebak {
 
   def main(args: Array[String]): Unit = {
 
@@ -69,7 +69,7 @@ object NewBusinessLibRevisionRealTime {
       //ProcessingMBData.doProcessingMBData(oneRdd, "phpmanager", "user_test", "default", "user_test", "id","impala::default.user_test")
       try {
         if (!oneRdd.isEmpty()) {
-          try {
+          /*try {
             ProcessingMBGiftOrder.doProcessingMBData(oneRdd, "db_order", "t_gift_order", "kudu_ods", "t_gift_order", "impala::kudu_ods.t_gift_order")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_order.t_gift_order" + ExceptionMsgUtil.getStackTraceInfo(e))
@@ -117,7 +117,7 @@ object NewBusinessLibRevisionRealTime {
             ProcessingMBProduct.doProcessingMBData(oneRdd, "db_goods", "t_product", "kudu_ods", "t_product", "impala::kudu_ods.t_product")
           } catch {
             case e: Exception => e.printStackTrace(); MailUtil.sendMailNew("新改版业务数据同步Kudu", "db_goods.t_product" + ExceptionMsgUtil.getStackTraceInfo(e))
-          }
+          }*/
 
 
           //实时处理

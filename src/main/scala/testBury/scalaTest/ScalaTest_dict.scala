@@ -1,6 +1,8 @@
 package testBury.scalaTest
 
 
+import com.niufu.tar.bec.BullBearTrendIndicatorCache
+import com.qq.tars.protocol.tars.BaseDecodeStream
 import scalikejdbc.config.DBs
 import scalikejdbc.{NamedDB, SQL}
 
@@ -14,16 +16,18 @@ object ScalaTest_dict {
 
 
   def main(args: Array[String]): Unit = {
-    getMysqlDataNew(-1)
+    getEarlyWarningTest()
   }
 
   def getEarlyWarningTest(): Unit = {
     DBs.setupAll()
     NamedDB('warn).readOnly { implicit session =>
-      SQL(s"select * from db_sscf.t_notify_push_button limit 10").map(rs => {
-        val b = rs.get[Array[Byte]]("sValue")
-        val str = new String(b)
-        println(str)
+      SQL(s"select DATA_VALUE from db_sscf.nf_bull_bear_trend_cache limit 10").map(rs => {
+        val b = rs.get[Array[Byte]]("DATA_VALUE")
+        val stream = new BaseDecodeStream(b)
+        val bullBearTrendIndicatorCache = new BullBearTrendIndicatorCache()
+        bullBearTrendIndicatorCache.readFrom(stream)
+        println(bullBearTrendIndicatorCache.getSSecCode)
       }).list().apply()
     }
   }
