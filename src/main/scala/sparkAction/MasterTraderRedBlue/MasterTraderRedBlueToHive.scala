@@ -19,6 +19,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object MasterTraderRedBlueToHive {
   private val TABLERESULT: String = ConfigurationManager.getProperty("masterTraderRedBlueTable")
+
   def insertToHive(ullBearTrendCacheData: Dataset[UllBearTrendCache], spark: SparkSession) = {
     import spark.implicits._
     val allData = ullBearTrendCacheData.map(line => {
@@ -54,7 +55,9 @@ object MasterTraderRedBlueToHive {
       alls
     })
     val oneData = allData.flatMap(_.toSeq)
-    oneData.repartition(1).createOrReplaceTempView("tempTable")
+    oneData
+      .repartition(3)
+      .createOrReplaceTempView("tempTable")
     spark.sql(s"insert overwrite table ${TABLERESULT} select * from tempTable")
   }
 }
