@@ -1,5 +1,7 @@
 package testBury.javaTest;
 
+import com.niufu.tar.bec.GetUserPointInfoRsp;
+
 /**
  * @ClassName Test2
  * @Description TODO

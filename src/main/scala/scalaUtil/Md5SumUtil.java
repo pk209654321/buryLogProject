@@ -1,5 +1,7 @@
 package scalaUtil;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -11,6 +13,9 @@ import java.security.NoSuchAlgorithmException;
  **/
 public class Md5SumUtil {
     public static String getMd5Sum(String str) {
+        if(StringUtils.isBlank(str)){
+            return "";
+        }
         byte[] buf = str.getBytes();
         MessageDigest md5 = null;
         try {

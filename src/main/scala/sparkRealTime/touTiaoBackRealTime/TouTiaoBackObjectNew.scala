@@ -4,10 +4,9 @@ import com.typesafe.config.ConfigFactory
 import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import scalaUtil.{LocalOrLine, MailUtil}
 import scalikejdbc._
 import scalikejdbc.config.DBs
@@ -18,7 +17,7 @@ import scalikejdbc.config.DBs
   * Author lenovo
   * Date 2019/3/5 14:10
   **/
-object TouTiaoBackObject {
+object TouTiaoBackObjectNew {
 
   def main(args: Array[String]): Unit = {
     val load = ConfigFactory.load()
