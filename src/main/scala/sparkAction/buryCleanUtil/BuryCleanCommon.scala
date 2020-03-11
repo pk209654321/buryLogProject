@@ -29,41 +29,87 @@ object BuryCleanCommon {
     flag
   }
 
+
   //获取老版本的日志
   val getOldVersionFunction = (one: BuryLogin) => {
-    val line = one.line+""
-    val strings = line.split("\\|", -1)
-    val i = strings(0).indexOf("=")
-    i >= 0
+    val line = one.line
+    if (StringUtils.isNotBlank(line)) {
+      val strings = line.split("\\|", -1)
+      val i = strings(0).indexOf("=")
+      i >= 0
+    } else {
+      false
+    }
   }
   //获取新版日志
   val getNewVersionFunction = (one: BuryLogin) => {
-    val line = one.line + ""
-    val strings = line.split("\\|", -1)
-    val i = strings(0).indexOf("=")
-    i < 0
+    val line = one.line
+    if (StringUtils.isNotBlank(line)) {
+      val strings = line.split("\\|", -1)
+      val i = strings(0).indexOf("=")
+      i < 0
+    } else {
+      false
+    }
   }
 
   //获取PC端web日志
   val getPcWebLog = (one: BuryLogin) => {
-    val line = one.line+""
-    val i = line.indexOf("application=browser")
-    if (i > 0) {
-      true
+    val line = one.line
+    if (StringUtils.isNotBlank(line)) {
+      val i = line.indexOf("application=browser")
+      i >= 0
     } else {
       false
     }
   }
   //获取手机web日志
   val getPhoneWebLog = (one: BuryLogin) => {
-    val line = one.line+""
-    val i = line.indexOf("application=web")
-    if (i >= 0) {
-      true
+    val line = one.line
+    if (StringUtils.isNotBlank(line)) {
+      val i = line.indexOf("application=web")
+      i >= 0
     } else {
       false
     }
   }
+
+
+  /* //获取老版本的日志
+   val getOldVersionFunction = (one: BuryLogin) => {
+     val line = one.line+""
+     val strings = line.split("\\|", -1)
+     val i = strings(0).indexOf("=")
+     i >= 0
+   }
+   //获取新版日志
+   val getNewVersionFunction = (one: BuryLogin) => {
+     val line = one.line + ""
+     val strings = line.split("\\|", -1)
+     val i = strings(0).indexOf("=")
+     i < 0
+   }
+
+   //获取PC端web日志
+   val getPcWebLog = (one: BuryLogin) => {
+     val line = one.line+""
+     val i = line.indexOf("application=browser")
+     if (i > 0) {
+       true
+     } else {
+       false
+     }
+   }
+   //获取手机web日志
+   val getPhoneWebLog = (one: BuryLogin) => {
+     val line = one.line+""
+     val i = line.indexOf("application=web")
+     if (i >= 0) {
+       true
+     } else {
+       false
+     }
+   }*/
 
 
   //获取客户端行为日志
@@ -79,7 +125,9 @@ object BuryCleanCommon {
   }
   //清洗原始日志
   val cleanCommonFunction: String => util.List[BuryLogin] = (line: String) => {
-    val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
+    val all: String = line.replaceAll("\\\\\"", "\"")
+      .replaceAll("\\\\\\\\u003d", "=")
+      .replaceAll("\\\\\\\\\"", "")
     val jsonAndIp: Array[String] = all.split("&")
     var listbury: java.util.List[BuryLogin] = new util.ArrayList[BuryLogin]()
     if (jsonAndIp.length >= 2) {
@@ -117,7 +165,9 @@ object BuryCleanCommon {
   //优化cleanCommonFunction清洗代码
   val cleanCommonToListBuryLogin: String => util.List[BuryLogin] = (line: String) => {
     var listbury: java.util.List[BuryLogin] = new util.ArrayList[BuryLogin]()
-    val all: String = line.replaceAll("\\\\\"", "\"").replaceAll("\\\\\\\\u003d", "=")
+    val all: String = line.replaceAll("\\\\\"", "\"")
+      .replaceAll("\\\\\\\\u003d", "=")
+      .replaceAll("\\\\\\\\\"", "")
     try {
       var bury = "1"
       //val jsonAndIp: Array[String] = all.split("&")
