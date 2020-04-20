@@ -4,6 +4,7 @@ import java.util
 
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.{DataFrame, Row}
 import scalaUtil.{DateScalaUtil, StructUtil}
@@ -17,15 +18,9 @@ import scala.collection.mutable
   */
 object BuryPhoneWebTableStringIp {
    private val TABLE: String = ConfigurationManager.getProperty("actionTablePhoneWebAll")
-  def cleanPhoneWebData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int) ={
-    /**
-    　　* @Description: TODO 清洗出手机浏览器端的日志
-    　　* @param [filterData, hc, dayFlag]
-    　　* @return org.apache.spark.sql.DataFrame
-    　　* @throws
-    　　* @author lenovo
-    　　* @date 2019/2/12 13:45
-    　　*/
+
+  // TODO:  清洗出手机浏览器端的日志
+  def cleanPhoneWebData(filterData: RDD[BuryLogin], hc: HiveContext, dayFlag: Int):sql.DataFrame ={
     val map: RDD[Row] = filterData.map(one => {
       val line = one.line
       val ipStr = one.ipStr
@@ -34,7 +29,7 @@ object BuryPhoneWebTableStringIp {
     val createDataFrame: DataFrame = hc.createDataFrame(map,StructUtil.structCommonStringIpMap)
     createDataFrame.registerTempTable("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag,1)
-    val hql= s"insert overwrite table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable"
+    val hql= s"insert overwrite table $TABLE partition(hp_stat_date='$timeStr') select * from tempTable"
     hc.sql(hql)
   }
 }

@@ -17,16 +17,9 @@ import scala.collection.mutable
 object BuryClientWebTableStringIp {
   private val TABLE: String = ConfigurationManager.getProperty("actionTableClientWebAll")
 
-  def cleanClientWebData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int, dict: Array[String]): Unit = {
-    /**
-      * 　　* @Description: 清洗出手机客户端镶嵌WEB的数据
-      * 　　* @param [filterWeb, hc, diffDay]
-      * 　　* @return void
-      * 　　* @throws
-      * 　　* @author lenovo
-      * 　　* @date 2018/12/4 17:45
-      * 　　*/
 
+  // TODO:  清洗出手机客户端镶嵌WEB的数据
+  def cleanClientWebData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int, dict: Array[String]): Unit = {
     val map: RDD[Row] = filterData.map(one => {
       val all: String = one.line
       val ipStr = one.ipStr
@@ -52,7 +45,7 @@ object BuryClientWebTableStringIp {
     val reDF = createDataFrame.repartition(1)
     reDF.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    spark.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
+    spark.sql(s"insert overwrite  table $TABLE partition(hp_stat_date='$timeStr') select * from tempTable")
   }
 
   def cleanClientWebData2(filterData: RDD[BuryLogin], spark: SparkSession, dayFlag: Int, dict: Array[String]): Unit = {
@@ -90,6 +83,6 @@ object BuryClientWebTableStringIp {
     val value = createDataFrame.repartition(1).persist()
     value.createOrReplaceTempView("tempTable")
     val timeStr: String = DateScalaUtil.getPreviousDateStr(dayFlag, 1)
-    spark.sql(s"insert overwrite  table ${TABLE} partition(hp_stat_date='${timeStr}') select * from tempTable")
+    spark.sql(s"insert overwrite  table $TABLE partition(hp_stat_date='$timeStr') select * from tempTable")
   }
 }

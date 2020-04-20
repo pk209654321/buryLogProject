@@ -1,27 +1,29 @@
 package sparkAction.StringIpActionListHive
 
-import java.util
-
 import conf.ConfigurationManager
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql
-import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
-
-import scala.collection.mutable
 
 /**
   * Created by lenovo on 2018/11/16.
   *
   */
-object BuryPhoneClientTableStringIp {
-  private val TABLE: String = ConfigurationManager.getProperty("actionTablePhoneClientAll")
+object BurySmallProgramHearbeatTableStringIp {
+  private val TABLE: String = ConfigurationManager.getProperty("burySmallProgramHearbeat")
 
 
-  // TODO:  清洗出手机客户端的数据insert到hive仓库中
-  def cleanPhoneClientData(filterData: RDD[BuryLogin], spark:SparkSession, dayFlag: Int):sql.DataFrame = {
+  /**
+    *
+    * @param filterData filterData
+    * @param spark      spark
+    * @param dayFlag    dayFlag
+    * @return
+    */
+  // TODO: 清洗小程序心跳日志
+  def cleanBuryStringIp(filterData: RDD[BuryLogin], spark: SparkSession, dayFlag: Int) {
+
     val map: RDD[Row] = filterData.map(one => {
       val line = one.line
       val ipStr = one.ipStr

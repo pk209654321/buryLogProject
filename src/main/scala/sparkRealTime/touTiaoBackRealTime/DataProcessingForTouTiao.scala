@@ -23,14 +23,17 @@ object DataProcessingForTouTiao {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
     })
+
     //清洗去掉不规则字符并转换为list形式
     val allData = filterBlank.map(BuryCleanCommon.cleanCommonToListBuryLogin).filter(_.size() > 0)
     val rddOneObjcet: RDD[AnyRef] = allData.flatMap(_.toArray())
-    //过滤空的line
+
+    //过滤出新版本登录日志(android)
     val allDataOneRdd = rddOneObjcet.map(_.asInstanceOf[BuryLogin]).filter(one => {
-      val line = one.line
-      StringUtils.isNotBlank(line) && one.logType == 1 && line.split("\\|", -1).size >= 23
+      val lineArray = one.line.split("\\|", -1)
+      StringUtils.isNotBlank(one.line) && one.logType == 1 && lineArray.length >= 23 && lineArray(7) == "android"
     })
+
     val phoneInfoRDD = allDataOneRdd.map(one => {
       try {
         val lineStr = one.line
@@ -55,6 +58,7 @@ object DataProcessingForTouTiao {
         case e: Exception => println(s"DataProcessingForTouTiao_error_log:logType=${one.logType},source=${one.source},line=${one.line}"); ("", "", "", "", "")
       }
     })
+
     //去重
     val disRdd = phoneInfoRDD.distinct()
     disRdd.foreachPartition(par => {
@@ -151,8 +155,10 @@ object DataProcessingForTouTiao {
         val jc_imei = jc._1._3
         val jc_idfa = jc._1._4
         if (jc_os.equals("0")) { //安卓
-          if ((StringUtils.isNoneBlank(jc_imei) && jc_imei.equals(imei) && !jc_imei.equals("5284047f4ffb4e04824a2fd1d1f0cd62")) ||
-            ((jc_imei.equals("5284047f4ffb4e04824a2fd1d1f0cd62") || StringUtils.isBlank(jc_imei)) && StringUtils.isNotBlank(jc_anid) && jc_anid.equals(anid))) {
+          if (
+            (StringUtils.isNoneBlank(jc_imei) && !jc_imei.equals("5284047f4ffb4e04824a2fd1d1f0cd62") && jc_imei.equals(imei)) ||
+              (StringUtils.isNotBlank(jc_anid) && jc_anid.equals(anid))
+          ) {
             insertAndPush(jc, 0)
           }
         } else if (jc_os.equals("1")) { //ios
@@ -170,9 +176,10 @@ object DataProcessingForTouTiao {
         val jcd_idfa = jcd._1._4
         if (guidDiff.contains(guid)) { //判断guid是否在过滤后的注册表中
           if (jcd_os.equals("0")) { //安卓
-            if ((StringUtils.isNoneBlank(jcd_imei) && !jcd_imei.equals("5284047f4ffb4e04824a2fd1d1f0cd62") && jcd_imei.equals(imei)) ||
-              ((jcd_imei.equals("5284047f4ffb4e04824a2fd1d1f0cd62") || StringUtils.isBlank(jcd_imei))
-                && StringUtils.isNotBlank(jcd_anid) && jcd_anid.equals(anid))) {
+            if (
+              (StringUtils.isNoneBlank(jcd_imei) && !jcd_imei.equals("5284047f4ffb4e04824a2fd1d1f0cd62") && jcd_imei.equals(imei)) ||
+                (StringUtils.isNotBlank(jcd_anid) && jcd_anid.equals(anid))
+            ) {
               insertAndPushRegister(jcd, 1, guid)
             }
           } else if (jcd_os.equals("1")) { //ios
@@ -207,7 +214,7 @@ object DataProcessingForTouTiao {
       case "1" => muid = idfa
       case _ =>
     }
-    param = s"muid=${muid}&os=${os}&callback=${callback_param}&event_type=${event_type}"
+    param = s"muid=$muid&os=$os&callback=$callback_param&event_type=$event_type"
     try {
       val insertFlag = NamedDB('phpmanager).localTx {
         implicit session =>
@@ -247,7 +254,7 @@ object DataProcessingForTouTiao {
       case "1" => muid = idfa
       case _ =>
     }
-    param = s"muid=${muid}&os=${os}&callback=${callback_param}&event_type=${event_type}"
+    param = s"muid=$muid&os=$os&callback=$callback_param&event_type=$event_type"
 
 
     try {
@@ -269,15 +276,13 @@ object DataProcessingForTouTiao {
   }
 
 
-  def macMd5sum(mac: String) = {
-    /**
-      * 　　* @Description: TODO mac取MD5sum
-      * 　  * @param [mac]
-      * 　　* @return java.lang.String
-      * 　　* @throws
-      * 　　* @author lenovo
-      * 　　* @date 2019/10/15 11:18
-      * 　　*/
+  /**
+    *
+    * @param mac mac
+    * @return MD5转化
+    *
+    */
+  def macMd5sum(mac: String):String = {
     if (StringUtils.isNotBlank(mac)) {
       val macStr = mac.replaceAll(":", "").toUpperCase
       Md5SumUtil.getMd5Sum(macStr)
@@ -287,5 +292,7 @@ object DataProcessingForTouTiao {
   }
 
   def main(args: Array[String]): Unit = {
+    val array = Array(1, 2, 3, 4)
+    println(array.length)
   }
 }

@@ -5,7 +5,6 @@ import kafka.common.TopicAndPartition
 import kafka.message.MessageAndMetadata
 import kafka.serializer.StringDecoder
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import scalaUtil.{LocalOrLine, MailUtil}
@@ -56,7 +55,7 @@ object TouTiaoBackObject {
       }).list().apply()
     }.toMap
 
-    val stream = if (fromOffsets.size == 0) { // 假设程序第一次启动
+    val stream = if (fromOffsets.isEmpty) { // 假设程序第一次启动
       KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics)
     } else { //程序不是第一次启动
       val messageHandler = (mm: MessageAndMetadata[String, String]) => (mm.key(), mm.message())
