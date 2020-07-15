@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Kudu {
+    /**
+     * kudu单例
+     */
     INSTANCE;
 
     private Kudu() {
@@ -26,6 +29,7 @@ public enum Kudu {
 
     private void addShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
             public void run() {
                 if (client != null) {
                     try {
@@ -68,19 +72,18 @@ public enum Kudu {
 
     public KuduSession newSessionManUal() throws KuduException {
         /**
-        　　* @Description: TODO FlushMode:MANUAL_FLUSH
-        　　* @param []
-        　　* @return org.apache.kudu.client.KuduSession
-        　　* @throws
-        　　* @author lenovo
-        　　* @date 2019/9/25 9:13
-        　　*/
+         　　* @Description: TODO FlushMode:MANUAL_FLUSH
+         　　* @param []
+         　　* @return org.apache.kudu.client.KuduSession
+         　　* @throws
+         　　* @author lenovo
+         　　* @date 2019/9/25 9:13
+         　　*/
         KuduSession session = client.newSession();
         session.setFlushMode(SessionConfiguration.FlushMode.MANUAL_FLUSH);
         session.setMutationBufferSpace(500000);
         return session;
     }
-
 
 
     public void closeSession(KuduSession session) {

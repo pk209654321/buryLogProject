@@ -84,7 +84,7 @@ object PolarLightActionNew {
           polarLightBeanNew.setDevice_type(device_type)
           polarLightBeanNew.setMac(mac)
 
-          if (device_id.equals("866320036841125") || device_id.equals("866320036911407")) {
+         // if (device_id.equals("866320036841125") || device_id.equals("866320036911407")) {
             val bool = PolarLightPost.postPolarLightNew(polarLightBeanNew)
             if (bool) {
               NamedDB('aurora).autoCommit {
@@ -106,7 +106,7 @@ object PolarLightActionNew {
                 implicit session => SQL(insertSql).bind(guid, device_id, device_type, conv_type, android_id, mac, access_time, hp_stat_date).update().apply()
               }
             }
-          }
+        //  }
 
 
 
@@ -219,7 +219,7 @@ object PolarLightActionNew {
           polarLightBeanNew.setDevice_type(device_type)
           polarLightBeanNew.setMac(mac)
 
-          if (device_id.equals("866320036841125") || device_id.equals("866320036911407")) {
+        //  if (device_id.equals("866320036841125") || device_id.equals("866320036911407")) {
             val bool = PolarLightPost.postPolarLightNew(polarLightBeanNew)
             if (bool) {
               NamedDB('aurora).autoCommit {
@@ -241,7 +241,7 @@ object PolarLightActionNew {
                 implicit session => SQL(insertSql).bind(guid, device_id, device_type, conv_type, android_id, mac, access_time, hp_stat_date).update().apply()
               }
             }
-          }
+        //  }
 
           /*val i = NamedDB('aurora).autoCommit {
             val insertSql =

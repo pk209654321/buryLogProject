@@ -27,7 +27,6 @@ object BurySmallProgramHearbeatTableStringIp {
     val map: RDD[Row] = filterData.map(one => {
       val line = one.line
       val ipStr = one.ipStr
-      val split = line.split("\\|")
       Row(line, ipStr)
     })
 

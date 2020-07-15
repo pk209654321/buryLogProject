@@ -21,6 +21,7 @@ object BuryMainFunction {
   private val hdfsPath: String = ConfigurationManager.getProperty("hdfs.log")
   private val dict: String = ConfigurationManager.getProperty("stock.web.dict")
   private val sphDict: String = ConfigurationManager.getProperty("small.program.hearbeat.dict")
+  private val spcDict: String = ConfigurationManager.getProperty("stock.pc.client.dict")
 
   def main(args: Array[String]): Unit = {
     val diffDay: Int = args(0).toInt
@@ -50,9 +51,11 @@ object BuryMainFunction {
     //获取t_stock_em_web_log_dt表的dict
     //获取t_small_program_action_dt表的dict
     val emDict: Array[String] = spark.sparkContext.textFile(dict).collect()
-    val smallProgramDict = spark.sparkContext.textFile("").collect()
+    val smallProgramDict = spark.sparkContext.textFile(sphDict).collect()
+    val spcDataDict = spark.sparkContext.textFile(spcDict).collect()
     val dictBrod = spark.sparkContext.broadcast(emDict).value
     val spDictBrod = spark.sparkContext.broadcast(smallProgramDict).value
+    val spcDictBrod = spark.sparkContext.broadcast(spcDataDict).value
     val filterBlank: RDD[String] = file.filter(line => {
       //过滤为空的和有ip但是post传递为空的
       StringUtils.isNotBlank(line) && StringUtils.isNotBlank(line.split("&")(0))
@@ -66,14 +69,14 @@ object BuryMainFunction {
     }).cache()
     val oldDataOneRdd: RDD[BuryLogin] = allDataOneRdd.filter(BuryCleanCommon.getOldVersionFunction)
     //老规则数据清洗入库
-    oldVersionCleanInsert(oldDataOneRdd, spark, diffDay)
+    oldVersionCleanInsert(oldDataOneRdd, spark, diffDay, spcDictBrod)
     //新规则数据+老规则数据清洗入库
     newVersionCleanInsert(allDataOneRdd, spark, diffDay, dictBrod, spDictBrod)
     spark.close()
   }
 
   //清洗老日志
-  def oldVersionCleanInsert(oldDataRddList: RDD[BuryLogin], spark: SparkSession, dayFlag: Int): Unit = {
+  def oldVersionCleanInsert(oldDataRddList: RDD[BuryLogin], spark: SparkSession, dayFlag: Int, spcDictBrod: Array[String]): Unit = {
     //过滤出pc端web日志
     val pcWebRdd = oldDataRddList.filter(BuryCleanCommon.getPcWebLog)
     //清洗出pc端web日志
@@ -102,6 +105,9 @@ object BuryMainFunction {
     val pcClient = filterAction.filter(_.source == 4)
     //清洗出股掌柜pc客户端的数据
     BuryPcClientTableMapIp.cleanPcClientData(pcClient, spark, dayFlag)
+    //新版pc客户端规则
+    val pcClientNew = pcClient.filter(_.line.indexOf("un=") > -1)
+    BuryPcClientTableUe.cleanBuryStringIpDict(pcClientNew, spark, dayFlag, spcDictBrod)
     //-------------------------------------------------------------------------------------------------------
     //过滤出手机客户端内嵌网页端行为日志
     //val filterWeb = filterAction.filter(_.source==3)
@@ -160,6 +166,9 @@ object BuryMainFunction {
     val filterSmHb = dataRddList.filter(line => line.logType == 4 && line.source == 6)
     BurySmallProgramHearbeatTableStringIp.cleanBuryStringIp(filterSmHb, spark, dayFlag)
 
+    //过滤出pc端心跳日志
+    val filterPcHb = dataRddList.filter(line => line.logType == 5 && line.source == 4)
+    BuryPcHeartbeatTableStringIp.cleanBuryStringIp(filterPcHb, spark, dayFlag)
 
   }
 

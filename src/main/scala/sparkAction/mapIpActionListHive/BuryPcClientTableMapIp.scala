@@ -30,10 +30,10 @@ object BuryPcClientTableMapIp {
       * 　　*/
 
     val map: RDD[Row] = filterData.map(one => {
-      val line = one.line
       //埋点数据
-      val ipStr = one.ipStr
+      val line = one.line
       //真实ip
+      val ipStr = one.ipStr
       val split = line.split("\\|")
       val hashMap: mutable.Map[String, String] = new mutable.HashMap[String, String]()
       split.foreach(l => {

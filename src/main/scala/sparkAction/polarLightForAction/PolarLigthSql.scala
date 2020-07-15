@@ -10,7 +10,7 @@ import conf.ConfigurationManager
   **/
 object PolarLigthSql {
   //极光sql
-  val hql:String =
+  val hql: String =
     s"""
        |select p1.hp_stat_date
        |			        ,p1.guid
@@ -79,7 +79,7 @@ object PolarLigthSql {
       """.stripMargin
 
 
-  val hqlNew:String =
+  val hqlNew: String =
     """
       |
       |select p1.hp_stat_date
@@ -139,8 +139,8 @@ object PolarLigthSql {
       |						  group by guid
       |						) p2
       |					 on p1.guid = p2.guid
-      |			      where
-      |          (p1.download_channel rlike '^guangdt([0-9]+)$' or p1.download_channel = 'appstore')
+      |       where (p2.guid is null or p2.first_date = p1.hp_stat_date)
+      |       and (p1.download_channel rlike '^guangdt([0-9]+)$' or p1.download_channel = 'appstore')
       |			    ) p1
       |		) p1
       |  where p1.num = 1

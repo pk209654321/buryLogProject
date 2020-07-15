@@ -17,17 +17,16 @@ object BuryPcHeartbeatTableStringIp {
   /**
     *
     * @param filterData filterData
-    * @param spark spark
-    * @param dayFlag dayFlag
+    * @param spark      spark
+    * @param dayFlag    dayFlag
     * @return
     */
   // TODO: pc心跳埋点日志
-  def cleanBuryStringIp(filterData: RDD[BuryLogin], spark: SparkSession, dayFlag: Int){
+  def cleanBuryStringIp(filterData: RDD[BuryLogin], spark: SparkSession, dayFlag: Int) {
 
     val map: RDD[Row] = filterData.map(one => {
       val line = one.line
       val ipStr = one.ipStr
-      val split = line.split("\\|")
       Row(line, ipStr)
     })
 

@@ -75,6 +75,17 @@ object BuryCleanCommon {
   }
 
 
+  def test(one: BuryLogin): Boolean = {
+    val line = one.line
+    if (StringUtils.isNotBlank(line)) {
+      val i = line.indexOf("application=web")
+       i >= 0
+    } else {
+       false
+    }
+  }
+
+
   /* //获取老版本的日志
    val getOldVersionFunction = (one: BuryLogin) => {
      val line = one.line+""

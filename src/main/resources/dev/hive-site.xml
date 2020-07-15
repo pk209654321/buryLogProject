@@ -4,6 +4,6 @@
 <configuration>
   <property>
     <name>hive.metastore.uris</name>
-    <value>thrift://master:9083</value>
+    <value>thrift://dsjtest03:9083</value>
   </property>
 </configuration>

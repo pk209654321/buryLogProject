@@ -5,7 +5,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scalaUtil.{DateScalaUtil, StructUtil}
 import sparkAction.BuryLogin
-import sparkAction.StringIpActionListHive.BuryClientWebTableStringIp.TABLE
 import sparkAction.buryCleanUtil.BuryCleanCommon
 
 import scala.collection.mutable
@@ -14,8 +13,8 @@ import scala.collection.mutable
   * Created by lenovo on 2018/11/16.
   *
   */
-object BurySmallProgramActionTableStringIp {
-  private val TABLE: String = ConfigurationManager.getProperty("burySmallProgramAction")
+object BuryPcClientTableUe {
+  private val TABLE: String = ConfigurationManager.getProperty("buryStockPcClientLogUe")
 
 
   /**
@@ -25,7 +24,7 @@ object BurySmallProgramActionTableStringIp {
     * @param dayFlag    dayFlag
     * @return
     */
-  // TODO:  清洗小程序行为日志
+  // TODO:  清洗pc客户端新规则表数据
 
   def cleanBuryStringIpDict(filterData: RDD[BuryLogin], spark: SparkSession, dayFlag: Int, dict: Array[String]) {
     val map: RDD[Row] = filterData.map(one => {
@@ -34,19 +33,6 @@ object BurySmallProgramActionTableStringIp {
       val splits = all.split("\\|")
       val hashMap = new mutable.HashMap[String, String]()
       splits.foreach(one => {
-        /*val i = one.indexOf("=") //获取第一个等于号的位置
-        if (i >= 0) {
-          //有等于号
-          val strfirst = one.substring(0, i)
-          val strSecond = one.substring(i + 1, one.length)
-          val trimKey: String = strfirst.trim
-          val trimVal: String = strSecond.trim
-          val bool = BuryCleanCommon.selectStockField(dict, trimKey)
-          if (!bool) {
-            hashMap += ((trimKey, trimVal))
-          }
-        }*/
-
         val eqSplits = one.split("=", 2)
         if (eqSplits.length == 2) { //如果满足kv形式
           val trimKey = eqSplits(0).trim
@@ -68,7 +54,7 @@ object BurySmallProgramActionTableStringIp {
 
   def main(args: Array[String]): Unit = {
     val str = "="
-    val valStr = "asdf|asdf||fasdfs|sdfsdf|".split("\\|",2)
+    val valStr = "asdf|asdf||fasdfs|sdfsdf|".split("\\|", 2)
     valStr.foreach(println(_))
   }
 }
